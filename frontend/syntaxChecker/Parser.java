@@ -406,9 +406,9 @@ public class Parser {
                 return new Ast.UnaryExp(ident);
             }
             if (tokenArray.check(TokenType.STR)) {
-                if(!ident.identifier.content.equals(Manager.ExternFunc.PUTF.getName())) {
-                    throw new SyntaxError("Unexpeted string");
-                }
+//                if(!ident.identifier.content.equals(Manager.ExternFunc.PRINTF.getName())) {
+//                    throw new SyntaxError("Unexpeted string");
+//                }
                 Token str = tokenArray.consumeToken(TokenType.STR);
                 if (tokenArray.checkAndSkip(TokenType.COMMA)) {
                     Ast.FuncRParams funcRParams = parseFuncRParams();

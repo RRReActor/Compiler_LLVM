@@ -8,6 +8,7 @@ public class Type {
     public static class BasicType extends Type{
 
         public static final BasicType I32_TYPE = new BasicType();
+        public static final BasicType I8_TYPE = new BasicType();
         public static final BasicType F64_TYPE = new BasicType();
         public static final BasicType I64_TYPE = new BasicType();
         public static final BasicType I1_TYPE = new BasicType();
@@ -18,6 +19,9 @@ public class Type {
         public String toString() {
             if(this.equals(I1_TYPE)) {
                 return "i1";
+            }
+            if(this.equals(I8_TYPE)) {
+                return "i8";
             }
             if(this.equals(I32_TYPE)) {
                 return "i32";

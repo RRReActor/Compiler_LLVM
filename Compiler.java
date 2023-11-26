@@ -18,7 +18,9 @@ public class Compiler {
 
     public static void main(String[] args) {
 
-        Arg arg = Arg.parse(args);
+
+        String[] tmp = {"-o", "llvm_ir.txt", "testfile.txt"};
+        Arg arg = Arg.parse(tmp);
         try {
             // lex
             //System.err.println("Lexer here");

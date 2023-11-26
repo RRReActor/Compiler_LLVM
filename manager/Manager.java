@@ -41,15 +41,17 @@ public class Manager {
         public static final Function GETFARRAY = new Function(Type.BasicType.I32_TYPE, "getfarray", new Type.PointerType(Type.BasicType.F32_TYPE));
         public static final Function PUTARRAY = new Function(Type.VoidType.VOID_TYPE, "putarray", Type.BasicType.I32_TYPE, new Type.PointerType(Type.BasicType.I32_TYPE));
         public static final Function PUTFARRAY = new Function(Type.VoidType.VOID_TYPE, "putfarray", Type.BasicType.I32_TYPE, new Type.PointerType(Type.BasicType.F32_TYPE));
-        public static final Function PUTF = new Function(Type.VoidType.VOID_TYPE, "putf");
+        public static final Function PUTSTR = new Function(Type.VoidType.VOID_TYPE, "putstr", new Type.PointerType(Type.BasicType.I8_TYPE));
+        public static final Function PRINTF = new Function(Type.VoidType.VOID_TYPE, "printf");
 
         public static final HashMap<String, Function> externFunctions = new HashMap<>() {{
             put(MEMSET.getName(), MEMSET);
             put(GETINT.getName(), GETINT);
             put(PUTINT.getName(), PUTINT);
             put(GETCH.getName(), GETCH);
-            put(GETFLOAT.getName(), GETFLOAT);
             put(PUTCH.getName(), PUTCH);
+            put(PUTSTR.getName(), PUTSTR);
+            put(GETFLOAT.getName(), GETFLOAT);
             put(PUTFLOAT.getName(), PUTFLOAT);
             put(STARTTIME.getName(), STARTTIME);
             put(STOPTIME.getName(), STOPTIME);
@@ -57,7 +59,7 @@ public class Manager {
             put(GETFARRAY.getName(), GETFARRAY);
             put(PUTARRAY.getName(), PUTARRAY);
             put(PUTFARRAY.getName(), PUTFARRAY);
-            put(PUTF.getName(), PUTF);
+            put(PRINTF.getName(), PRINTF);
         }};
     }
 
@@ -93,8 +95,8 @@ public class Manager {
                 functions.entrySet()) {
             if (functionEntry.getValue().isExternal()) {
                 Function function = functionEntry.getValue();
-                if (functionEntry.getKey().equals(ExternFunc.PUTF.getName())) {
-                    outputList.add("declare void @" + ExternFunc.PUTF.getName() + "(ptr, ...)");
+                if (functionEntry.getKey().equals(ExternFunc.PRINTF.getName())) {
+                    outputList.add("declare void @" + ExternFunc.PRINTF.getName() + "(ptr, ...)");
                 } else {
                     outputList.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }

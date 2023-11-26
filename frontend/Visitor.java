@@ -616,7 +616,7 @@ public class Visitor {
         ArrayList<Value> rParams = new ArrayList<>();
 
         if (str != null) {
-            assert ident.identifier.content.equals(Manager.ExternFunc.PUTF.getName());
+            assert ident.identifier.content.equals(Manager.ExternFunc.PRINTF.getName());
             for (int i = 0; i < funcRParams.getParams().size(); i++) {
                 rParams.add(visitExp(funcRParams.getParams().get(i)));
             }
