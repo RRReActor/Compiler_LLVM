@@ -100,8 +100,15 @@ public class Manager {
             if (functionEntry.getValue().isExternal()) {
                 Function function = functionEntry.getValue();
                 if (functionEntry.getKey().equals(ExternFunc.PRINTF.getName())) {
-                    outputListWithoutStr.add("declare void @" + ExternFunc.PRINTF.getName() + "(ptr, ...)");
+                    // 调整为 putstr, putint, putch
+                    outputListWithoutStr.add("declare void @putstr(i8*)");
+                    outputListWithoutStr.add("declare void @putint(i32)");
+
                 } else {
+                    // 过滤 putint
+                    if(functionEntry.getKey().equals(ExternFunc.PUTINT.getName())) {
+                        continue;
+                    }
                     outputListWithoutStr.add(String.format("declare %s @%s(%s)", function.getRetType().toString(), functionEntry.getKey(), function.FArgsToString()));
                 }
             }
@@ -130,16 +137,15 @@ public class Manager {
                         String[] formatStrs = formatStr.split("%d");
                         if(!formatStrs[0].equals("")){
                             outputListOfStr.add("@.format_str_" + format_str_idx + " = constant [" + str2llvmIR(formatStrs[0]));
-                            format_str_idx++;
                             sb.append("\tcall void @putstr(ptr ").append("@.format_str_" + format_str_idx + ")\n");
+                            format_str_idx++;
                         }
 
                         for(int i = 1; i < formatStrs.length; i++) {
-                            sb.append("\tcall void @putint(i32 ").append(args[i]).append(")\n");
+                            sb.append("\tcall void @putint(").append(args[i]).append(")\n");
                             outputListOfStr.add("@.format_str_" + format_str_idx + " = constant [" + str2llvmIR(formatStrs[i]));
-                            format_str_idx++;
                             sb.append("\tcall void @putstr(ptr ").append("@.format_str_" + format_str_idx + ")\n");
-
+                            format_str_idx++;
                         }
                     }
                     outputListWithoutStr.add(sb.toString());
