@@ -217,14 +217,26 @@ public class Instruction extends User {
             return str.toString();
         }
 
+        public boolean isPrintf() {
+            // todo: improve way to judge
+            return strIdx != -1;
+        }
+
+        public int getPrintfIdx() {
+            return strIdx;
+        }
+
         @Override
         public String toString() {
             if (strIdx != -1) {
-                //fixme:to putf
-                if (!params.isEmpty())
-                    return "call void @" + Manager.ExternFunc.PRINTF.getName() + "(ptr @.str_" + strIdx + ", " + paramsToString() + ")";
+                //fixme:to
+                if (!params.isEmpty()){
+                    // 准备参数 调整格式
+                    return "REPLACE_PRINTF:<" + strIdx + ">, " + paramsToString();
+                }
                 else
-                    return "call void @" + Manager.ExternFunc.PRINTF.getName() + "(ptr @.str_" + strIdx + ")";
+                    // 直接putstr
+                    return "call void @putstr(ptr @.str_" + strIdx + ")";
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());

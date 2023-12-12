@@ -1,5 +1,6 @@
 package mir;
 
+import manager.Manager;
 import midend.CloneInfo;
 import utils.SyncLinkedList;
 
@@ -137,23 +138,18 @@ public class BasicBlock extends Value {
         this.sucBlocks = sucBlocks;
     }
 
-
-
-
     //region outputLLVMIR
     public ArrayList<String> output() {
         if (instructions.isEmpty()) {
             return new ArrayList<>();
         }
+
         ArrayList<String> outputList = new ArrayList<>();
         outputList.add(label + ":");
 
         for (Instruction instruction :
                 instructions) {
             outputList.add("\t" + instruction.toString());
-//            if (instruction instanceof Instruction.Terminator) {
-//                break;
-//            }
         }
         return outputList;
     }

@@ -889,6 +889,7 @@ public class Visitor {
             argument.idx = i;
             new Instruction.Store(currentBB, argument, ptr);
 
+
             currentSymTable.addSymbol(new Symbol(argIdent, argType, null, false, ptr));
         }
 
