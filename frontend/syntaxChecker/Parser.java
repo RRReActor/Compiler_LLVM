@@ -246,6 +246,31 @@ public class Parser {
                 Ast.Stmt stmt = parseStmt();
                 return new Ast.WhileStmt(cond, stmt);
             }
+            case FOR -> {
+                tokenArray.consumeToken(TokenType.FOR);
+                tokenArray.consumeToken(TokenType.L_PAREN);
+                Ast.Stmt init = null;
+                Ast.Cond cond = null;
+                Ast.Stmt step = null;
+                if(!tokenArray.checkAndSkip(TokenType.SEMI)) {
+                    init = parseStmt();
+                }
+                if(!tokenArray.checkAndSkip(TokenType.SEMI)) {
+                    cond = parseCond();
+                    tokenArray.consumeToken(TokenType.SEMI);
+                }
+                if(!tokenArray.checkAndSkip(TokenType.R_PAREN)) {
+                    // 不含分号的赋值语句
+                    Ast.AddExp exp = parseAddExp();
+                    Ast.Lval lval = exactLval(exp);
+                    tokenArray.consumeToken(TokenType.ASSIGN);
+                    Ast.AddExp rExp = parseAddExp();
+                    step = new Ast.AssignStmt(lval, rExp);
+                    tokenArray.consumeToken(TokenType.R_PAREN);
+                }
+                Ast.Stmt stmt = parseStmt();
+                return new Ast.ForStmt(init, cond, step, stmt);
+            }
             case BREAK -> {
                 tokenArray.consumeToken(TokenType.BREAK);
                 tokenArray.consumeToken(TokenType.SEMI);

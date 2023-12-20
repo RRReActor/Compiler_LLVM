@@ -9,6 +9,7 @@ public enum TokenType {
     CONST("const", true),
     IF("if", true),
     WHILE("while", true),
+    FOR("for", true),
     BREAK("break", true),
     CONTINUE("continue", true),
     ELSE("else", true),

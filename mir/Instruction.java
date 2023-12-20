@@ -235,8 +235,7 @@ public class Instruction extends User {
                     return "REPLACE_PRINTF:<" + strIdx + ">, " + paramsToString();
                 }
                 else
-                    // 直接putstr
-                    return "call void @putstr(ptr @.str_" + strIdx + ")";
+                    return "REPLACE_PRINTF:<" + strIdx + ">";
             }
             if (destFunction.getRetType() instanceof Type.VoidType) {
                 return String.format("call void @%s(%s)", destFunction.name, paramsToString());

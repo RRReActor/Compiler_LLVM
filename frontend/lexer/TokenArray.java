@@ -92,7 +92,7 @@ public class TokenArray {
             }
         }
         for(int i = 0;i < index;i ++) {
-            System.err.println(tokens.get(i));
+            System.err.println(tokens.get(i).content);
         }
         throw new SyntaxError("Expected " + Arrays.toString(types) + " but got " + token.tokenType.toString());
     }

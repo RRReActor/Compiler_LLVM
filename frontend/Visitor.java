@@ -949,7 +949,9 @@ public class Visitor {
             visitBlockStmt((Ast.BlockStmt) stmt);
         } else if (stmt instanceof Ast.IfStmt) {
             visitIfStmt((Ast.IfStmt) stmt);
-        } else if (stmt instanceof Ast.WhileStmt) {
+        } else if (stmt instanceof  Ast.ForStmt){
+            visitForStmt((Ast.ForStmt) stmt);
+        }else if (stmt instanceof Ast.WhileStmt) {
             visitWhileStmt((Ast.WhileStmt) stmt);
         } else if (stmt instanceof Ast.IfElStmt) {
             visitIfElStmt((Ast.IfElStmt) stmt);
@@ -1249,6 +1251,55 @@ public class Visitor {
         conds.pop();
         recorders.pop();
 
+    }
+
+    private void visitForStmt(Ast.ForStmt stmt) throws SemanticError {
+
+        recorders.add(new Recorder());
+
+        BasicBlock initBB = new BasicBlock(getBBName(), currentFunc);
+        BasicBlock condBB = new BasicBlock(getBBName(), currentFunc);
+        BasicBlock bodyBB = new BasicBlock(getBBName(), currentFunc);
+        BasicBlock followBB = new BasicBlock(getBBName(), currentFunc);
+        new Instruction.Jump(currentBB, initBB);
+        currentBB = initBB;
+        if (stmt.getInit() != null) {
+            visitAssignStmt((Ast.AssignStmt) stmt.getInit());
+        }
+
+        new Instruction.Jump(currentBB, condBB);
+        currentBB = condBB;
+        if (stmt.getCond() != null) {
+            conds.add(stmt.getCond());
+            Value cond = visitCond(stmt.getCond(), bodyBB, followBB);
+            assert cond.getType().isInt1Ty();
+            new Instruction.Branch(currentBB, cond, bodyBB, followBB);
+        } else {
+            new Instruction.Jump(currentBB, bodyBB);
+        }
+
+        currentBB = bodyBB;
+        if (stmt.getStmt() != null) {
+            visitStmt(stmt.getStmt());
+        }
+        if (stmt.getStep() != null) {
+            visitAssignStmt((Ast.AssignStmt) stmt.getStep());
+        }
+        new Instruction.Jump(currentBB, condBB);
+
+        currentBB = followBB;
+        Recorder recoder = recorders.peek();
+        for (Instruction.Jump jump :
+                recoder.jumps) {
+            switch (jump.getMark()) {
+                case BREAK -> jump.backFill(followBB);
+                case CONTINUE -> jump.backFill(condBB);
+            }
+        }
+        if(stmt.getCond() != null) {
+            conds.pop();
+        }
+        recorders.pop();
     }
 
     private void visitIfElStmt(Ast.IfElStmt ifElStmt) throws SemanticError {

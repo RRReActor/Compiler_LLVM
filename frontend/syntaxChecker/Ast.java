@@ -165,12 +165,20 @@ public class Ast {
     public static class ExpStmt extends Stmt {
         private AddExp exp;
 
+        public ExpStmt() {
+            this.exp = null;
+        }
+
         public ExpStmt(AddExp exp) {
             this.exp = exp;
         }
 
         public AddExp getExp() {
             return exp;
+        }
+
+        public boolean hasExp() {
+            return exp != null;
         }
     }
 
@@ -203,6 +211,36 @@ public class Ast {
             return cond;
         }
 
+    }
+
+    public static class ForStmt extends Stmt {
+        private Stmt init;
+        private Cond cond;
+        private Stmt step;
+        private Stmt stmt;
+
+        public ForStmt(Stmt init, Cond cond, Stmt step, Stmt stmt) {
+            this.init = init;
+            this.cond = cond;
+            this.step = step;
+            this.stmt = stmt;
+        }
+
+        public Stmt getInit() {
+            return init;
+        }
+
+        public Cond getCond() {
+            return cond;
+        }
+
+        public Stmt getStep() {
+            return step;
+        }
+
+        public Stmt getStmt() {
+            return stmt;
+        }
     }
 
     public static class WhileStmt extends Stmt {

@@ -77,7 +77,7 @@ public class Manager {
 
         // 字符处理
         for (int i = 0; i < globalStrings.size(); i++) {
-            outputListOfStr.add("@.str_" + (i + 1) + " = constant [" + str2llvmIR(globalStrings.get(i).substring(1, globalStrings.get(i).length() - 1)));
+            outputListOfStr.add("@.str_" + (i + 1)  + " = constant [" + str2llvmIR(globalStrings.get(i).substring(1, globalStrings.get(i).length() - 1)));
         }
 
         //全局变量
@@ -115,7 +115,6 @@ public class Manager {
         }
 
         //函数定义
-        int format_str_idx = 0;
         for (Map.Entry<String, Function> functionEntry :
                 functions.entrySet()) {
             Function function = functionEntry.getValue();
@@ -127,25 +126,36 @@ public class Manager {
                 if(s.startsWith("\tREPLACE_PRINTF")) {
                     StringBuilder sb = new StringBuilder();
                     String[] args = s.split(",");
-                    // 用正则获取<strIdx> 中的 序号
-                    int strIdx = Integer.parseInt(args[0].replaceAll("[^0-9]", "")) - 1;
-                    String formatStr = globalStrings.get(strIdx);
-                    // 仅含整数输出，以 %d 分割
-                    if(formatStr.matches(".*%d.*")) {
-                        // 去掉头尾的双引号
-                        formatStr = formatStr.substring(1, formatStr.length() - 1);
-                        String[] formatStrs = formatStr.split("%d");
-                        if(!formatStrs[0].equals("")){
-                            outputListOfStr.add("@.format_str_" + format_str_idx + " = constant [" + str2llvmIR(formatStrs[0]));
-                            sb.append("\tcall void @putstr(ptr ").append("@.format_str_" + format_str_idx + ")\n");
-                            format_str_idx++;
+                    // 用正则获取<globalStrIdx> 中的 序号
+                    int globalStrIdx = Integer.parseInt(args[0].replaceAll("[^0-9]", "")) - 1;
+                    String formatStr = globalStrings.get(globalStrIdx);
+                    // 去掉头尾的双引号
+                    formatStr = formatStr.substring(1, formatStr.length() - 1);
+                    String[] formatStrList = formatStr.split("%d");
+                    // 字符序号
+                    int str_idx = 0;
+                    // 参数序号
+                    int arg_idx = 1;
+                    // 当前字符长度
+                    int length = 0;
+                    while(str_idx < formatStrList.length || arg_idx < args.length) {
+                        if(str_idx < formatStrList.length) {
+                            // 在全局定义字符串 str_idx_subIdx
+                            String curName = "str_" + (globalStrIdx + 1) + "_" + (str_idx + 1);
+                            outputListOfStr.add("@.str_" + (globalStrIdx + 1) + "_" + (str_idx + 1) + " = constant [" + str2llvmIR(formatStrList[str_idx]) + "\n");
+                            // 计算当前字符串长度
+                            length = getStrlen(formatStrList[str_idx]);
+                            // %str_idx_subIdx = ptr
+                            sb.append("\t%").append(curName)
+                                    .append(" = getelementptr [").append(length).append(" x i8], [")
+                                    .append(length).append(" x i8]* @.").append(curName).append(", i32 0, i32 0\n");
+                            // 调用putstr输出
+                            sb.append("\tcall void @putstr(i8* %").append(curName).append(")\n");
+                            str_idx++;
                         }
-
-                        for(int i = 1; i < formatStrs.length; i++) {
-                            sb.append("\tcall void @putint(").append(args[i]).append(")\n");
-                            outputListOfStr.add("@.format_str_" + format_str_idx + " = constant [" + str2llvmIR(formatStrs[i]));
-                            sb.append("\tcall void @putstr(ptr ").append("@.format_str_" + format_str_idx + ")\n");
-                            format_str_idx++;
+                        if(arg_idx < args.length) {
+                            sb.append("\tcall void @putint(").append(args[arg_idx]).append(")\n");
+                            arg_idx++;
                         }
                     }
                     outputListWithoutStr.add(sb.toString());
@@ -184,6 +194,17 @@ public class Manager {
         }
         return count;
     }
+
+    private int getStrlen(String str2) {
+        String str = str2;
+        str = "\"" + str.replace("\\n", "\\0A");
+        str += "\\00\"";
+        int length = str.length() - 2;
+        length -= (countOfSubStr(str, "\\0A") + countOfSubStr(str, "\\00")) * 2;
+        return length;
+    }
+
+
 
     private String str2llvmIR(String str) {
         str = "\"" + str.replace("\\n", "\\0A");

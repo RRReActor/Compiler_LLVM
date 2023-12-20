@@ -1,44 +1,44 @@
 int main() {
-    int balaa = getint();
-    printf("%d\n", balaa);
-    printf("123");
-    printf("1 %d 2 %d 3\n", balaa, balaa);
-    putint(balaa);
+    int a;
+    int b[2] = {1, 2};
+    int c[2][2] = {{1, 2}, {3, 4}};
+    const int d = 0, e = 1;
+    const int f[2] = {1, 2};
+    const int g[2][2] = {{1, 2}, {3, 4}};
+    b[0] = 1;
+    c[0][0] = 1;
+    1 + 1;
+    (1 + 1);
+    printf("21371295\n");
+    printf("%d\n", d);
+    printf("%d %d\n",b[0], b[1]);
     int i = 0;
-    0 + 1;
-    ;
-    if (i > 0) {
-        i = 1;
-    } else {
-        i = 0;
+    for(i = 0;;){
+        break;
     }
-    int a = 1, b = 2;
-    if (a >= 0){
-        a = 1;
+    for(; i < 2;){
+        i = i + 1;
+        break;
     }
-    if (a >= 0) {}
-    if (!a) {
-    } else {
+    for(;; i = i + 1){
+        break;
     }
-    if (b <= 0){
-        b = 2;
+    for(i = 0; i < 3; i = i + 1){
+        continue;
+        a = 0;
     }
-    if (a == b) {
-        i = 1;
+    for(i = 0; i < 5;){
+        break;
     }
-    if (a != b) {
-        i = 0;
+    for(i = 0;; i = i + 1){
+        break;
     }
-    if (a != b && a > 0) {
-        i = 1;
+    for(; i < 100; i = i + 1){
+        break;
     }
-    if (a != b || a > 0) {
-        i = 2;
+    for(;;){
+        break;
     }
-
-    a = a + 1 -3 * 4 / 3 % 2;
-    a = 1 + 1;
-    a = +-+1;
 
     return 0;
 }

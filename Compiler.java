@@ -19,7 +19,7 @@ public class Compiler {
     public static void main(String[] args) {
 
 
-        String[] tmp = {"-o", "llvm_ir.txt", "testfile.txt"};
+        String[] tmp = {"-o", "llvm_ir.txt", "testfile.txt", "-O1"};
         Arg arg = Arg.parse(tmp);
         try {
             // lex

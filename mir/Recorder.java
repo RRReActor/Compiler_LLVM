@@ -7,7 +7,6 @@ import java.util.ArrayList;
  */
 public class Recorder {
     public Recorder() {}
-
     private ArrayList<Mark> marks = new ArrayList<>();
     public ArrayList<Instruction.Jump> jumps = new ArrayList<>();
 
@@ -20,6 +19,7 @@ public class Recorder {
             this.name = name;
         }
     }
+
     public void record(Mark mark, Instruction.Jump jump) {
         marks.add(mark);
         jumps.add(jump);
