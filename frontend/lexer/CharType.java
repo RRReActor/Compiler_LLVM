@@ -1,50 +1,42 @@
 package frontend.lexer;
 
 public class CharType {
-    public CharType(){
 
-    }
-
-    public boolean isdigit(char c) {
+    public static boolean isdigit(char c) {
         return Character.isDigit(c);
     }
 
-    public boolean isupper(char c) {
+    public  static boolean isUpper(char c) {
         return Character.isUpperCase(c);
     }
 
-    public boolean islower(char c) {
+    public  static boolean isLower(char c) {
         return Character.isLowerCase(c);
     }
 
-    public boolean isLetter(char c) {
+    public static  boolean isLetter(char c) {
         return Character.isLetter(c);
     }
 
-    public boolean isIdent(char c) {
+    public static  boolean isIdent(char c) {
         return isdigit(c) || isLetter(c) || (c == '_');
     }
 
-    public boolean isNumber(char c) {
+    public  static boolean isNumber(char c) {
         return isdigit(c) || (c == '.') || isLetter(c);
     }
 
-
-    public boolean isSpecialNum(String str) {
+    public  static  boolean isSpecialNum(String str) {
         String hexFloat ="(0(x|X)[0-9A-Fa-f]*\\.[0-9A-Fa-f]*((p|P|e|E)(\\+|\\-)?[0-9A-Fa-f]*)?)|" +
                 "(0(x|X)[0-9A-Fa-f]*[\\.]?[0-9A-Fa-f]*(p|P|e|E)((\\+|\\-)?[0-9A-Fa-f]*)?)";
         String hexInt = "0(x|X)[0-9A-Fa-f]+";
 
         String sciNumber = "^[+-]?\\d*\\.?\\d+[Ee][+-]?$";
 
-
-
         return str.matches(hexFloat) || str.matches(hexInt) || str.matches(sciNumber);
     }
 
-
-
-    public boolean isBlank(char c) {
+    public  static boolean isBlank(char c) {
         return c == ' ' || c == '\r' || c == '\n' || c == '\t';
     }
 

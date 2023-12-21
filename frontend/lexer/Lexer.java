@@ -2,42 +2,45 @@ package frontend.lexer;
 
 import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.regex.Pattern;
 
 
 public class Lexer {
     private TokenArray tokenArray;
     private BufferedInputStream src;
-
-    private StringHandler stringHandler;
+    private BufferReader BuffReader;
 
     private boolean debugMode;
 
     public Lexer(BufferedInputStream src, TokenArray tokenArray) {
         this.src = src;
         this.tokenArray = tokenArray;
-        this.stringHandler = new StringHandler(src);
+        this.BuffReader = new BufferReader(src);
         this.debugMode = false;
     }
 
-    public Lexer(BufferedInputStream src, TokenArray tokenArray, boolean DEBUG_MODE) {
-        this.src = src;
-        this.tokenArray = tokenArray;
-        this.stringHandler = new StringHandler(src);
-        this.debugMode = DEBUG_MODE;
+    public int addToken(String str) {
+        for (TokenType tokenType : TokenType.values()) {
+            Pattern p = tokenType.getPattern();
+            if (p.matcher(str).matches()) {
+                if (debugMode) {
+                    System.out.println(tokenType + "\t" + str);
+                }
+                tokenArray.append(new Token(tokenType, str, BufferReader.line));
+                return 0;
+            }
+        }
+        return -1;
     }
 
-    private int detectType(String str) {
-        for(TokenType tokenType : TokenType.values())
-        {
+    public int replaceToken(String str) {
+        for (TokenType tokenType : TokenType.values()) {
             Pattern p = tokenType.getPattern();
-            if(p.matcher(str).matches())
-            {
-                if(debugMode) {
-                    System.out.println(tokenType.toString() + "\t" + str);
+            if (p.matcher(str).matches()) {
+                if (debugMode) {
+                    System.out.println(tokenType + "\t" + str);
                 }
-                tokenArray.append(new Token(tokenType, str));
+                tokenArray.setToken(tokenArray.index, new Token(tokenType, str, BufferReader.line));
                 return 0;
             }
         }
@@ -45,28 +48,266 @@ public class Lexer {
     }
 
     public void lex() throws IOException {
-        if(stringHandler.reachEOF()) {
-            System.err.println("Try to lex a file which has reached the end!");
-            return;
-        }
+        //
+        StringBuilder builder = new StringBuilder();
+        char last = 0;
+        boolean isStr = false;
+        while (!BuffReader.reachEOF()) {
+            char cur = (char) BuffReader.getChar();
+            switch (cur) {
+                case '(' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("(");
+                }
+                case ')' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last) || last == '.') {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken(")");
+                }
+                case '{' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("{");
+                }
+                case '}' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("}");
+                }
+                case ';' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken(";");
+                }
+                case '+' -> {
+                    if (isStr || CharType.isSpecialNum(builder.toString())) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("+");
+                }
+                case '-' -> {
+                    if (isStr || CharType.isSpecialNum(builder.toString())) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("-");
+                }
+                case '*' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("*");
+                }
+                case '/' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("/");
+                }
+                case '%' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("%");
+                }
+                case '!' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("!");
+                }
+                case ',' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last) || CharType.isNumber(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken(",");
+                }
+                case '[' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("[");
+                }
+                case '>' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken(">");
+                }
+                case '<' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("<");
+                }
+                case ']' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    addToken("]");
+                }
+                case '=' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
 
-        while (!stringHandler.reachEOF()) {
-            String cur = stringHandler.scanf();
-            ArrayList<String> subStrings = stringHandler.SplitString(cur);
-            for (String subString:
-                 subStrings) {
-                if(detectType(subString) < 0) {
-                    throw new RuntimeException("Unexpected token type, content:"+"\t"+subString);
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+
+                    if (last == '!')
+                        replaceToken("!=");
+                    else if (last == '=')
+                        replaceToken("==");
+                    else if (last == '<')
+                        replaceToken("<=");
+                    else if (last == '>')
+                        replaceToken(">=");
+                    else
+                        addToken("=");
+
+                }
+                case '|' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    if (last == '|')
+                        replaceToken("||");
+                    else
+                        addToken("|");
+                }
+                case '&' -> {
+                    if (isStr) {
+                        builder.append(cur);
+                        break;
+                    }
+                    if (CharType.isIdent(last)) {
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                    }
+                    if (last == '&')
+                        replaceToken("&&");
+                    else
+                        addToken("&");
+                }
+                case '"' -> {
+                    if (!isStr) {
+                        isStr = true;
+                        builder.append(cur);
+                    } else {
+                        builder.append(cur);
+                        addToken(builder.toString());
+                        builder = new StringBuilder();
+                        isStr = false;
+                    }
+                }
+                default -> {
+                    builder.append(cur);
+                    if (BuffReader.reachEOF()) {
+                        addToken(builder.toString());
+                    }
                 }
             }
+            last = cur;
         }
 
-        if(stringHandler.reachEOF())
-        {
-            tokenArray.append(new Token(TokenType.EOF, ""));
-            if(debugMode) {
-                System.out.println(TokenType.EOF.toString() + "\t" + "");
-            }
+    }
+
+    public void printTokens() {
+        for (Token token : tokenArray.tokens) {
+            System.out.println(token.tokenType + "\t" + token.content);
         }
     }
 }

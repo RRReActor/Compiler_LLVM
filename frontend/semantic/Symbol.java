@@ -9,9 +9,7 @@ public class Symbol {
     private InitValue initValue;
     private final boolean isConstant;
     private final Value allocInst;
-
     private InitValue curValue;
-
     public boolean isChanged = false;
 
     public Symbol(String name, Type type, InitValue initValue, Boolean isConstant, Value allocInst) {

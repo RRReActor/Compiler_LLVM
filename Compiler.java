@@ -28,6 +28,7 @@ public class Compiler {
             TokenArray tokenArray = new TokenArray();
             Lexer lexer = new Lexer(src, tokenArray);
             lexer.lex();
+            lexer.printTokens();
             //System.err.println("Lexer work well, now it is parser");
             // parse
             //System.err.println("Parser here");
