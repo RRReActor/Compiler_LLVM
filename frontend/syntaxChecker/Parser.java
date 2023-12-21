@@ -3,8 +3,6 @@ package frontend.syntaxChecker;
 import frontend.lexer.Token;
 import frontend.lexer.TokenArray;
 import exception.SyntaxError;
-import frontend.lexer.TokenType;
-import manager.Manager;
 
 
 import java.util.ArrayList;
@@ -28,10 +26,10 @@ public class Parser {
     }
 
     private Ast.Decl parseDecl() throws SyntaxError {
-        if(tokenArray.check(2, TokenType.L_PAREN)) {
+        if(tokenArray.check(2, Token.Type.L_PAREN)) {
             return parseFuncDef();
         }
-        if (tokenArray.check(TokenType.CONST)) {
+        if (tokenArray.check(Token.Type.CONST)) {
             return parseConstDecl();
         } else {
             return parseVarDecl();
@@ -40,13 +38,13 @@ public class Parser {
     }
 
     private Ast.FuncDef parseFuncDef() throws SyntaxError {
-        Token funcType = tokenArray.consumeToken(TokenType.INT, TokenType.FLOAT, TokenType.VOID);
+        Token funcType = tokenArray.consumeToken(Token.Type.INT, Token.Type.FLOAT, Token.Type.VOID);
         Ast.Ident ident = parseIdent();
-        tokenArray.consumeToken(TokenType.L_PAREN);
-        boolean hasFuncFParams = !tokenArray.checkAndSkip(TokenType.R_PAREN);
+        tokenArray.consumeToken(Token.Type.L_PAREN);
+        boolean hasFuncFParams = !tokenArray.checkAndSkip(Token.Type.R_PAREN);
         if(hasFuncFParams) {
             ArrayList<Ast.FuncFParam> funcFParams = parseFuncFParams();
-            tokenArray.consumeToken(TokenType.R_PAREN);
+            tokenArray.consumeToken(Token.Type.R_PAREN);
             Ast.Block block = parseBlock();
             return new Ast.FuncDef(funcType, ident, funcFParams, block);
         }
@@ -56,31 +54,31 @@ public class Parser {
     }
 
     private Ast.ConstDecl parseConstDecl() throws SyntaxError {
-        tokenArray.consumeToken(TokenType.CONST);
+        tokenArray.consumeToken(Token.Type.CONST);
         Ast.Btype btype = parseBtype();
         ArrayList<Ast.ConstDef> constDefs = new ArrayList<Ast.ConstDef>();
         do{
             Ast.ConstDef constDef = parseConstDef();
             constDefs.add(constDef);
-        } while (tokenArray.checkAndSkip(TokenType.COMMA));
-        tokenArray.consumeToken(TokenType.SEMI);
+        } while (tokenArray.checkAndSkip(Token.Type.COMMA));
+        tokenArray.consumeToken(Token.Type.SEMI);
         return new Ast.ConstDecl(btype, constDefs);
     }
 
     private Ast.ConstDef parseConstDef() throws SyntaxError {
         Ast.Ident ident = parseIdent();
-        if(tokenArray.checkAndSkip(TokenType.L_BRACK)) {
+        if(tokenArray.checkAndSkip(Token.Type.L_BRACK)) {
             ArrayList<Ast.AddExp> addExps = new ArrayList<Ast.AddExp>();
             do {
                 Ast.AddExp addExp = parseAddExp();
                 addExps.add(addExp);
-                tokenArray.consumeToken(TokenType.R_BRACK);
-            } while (tokenArray.checkAndSkip(TokenType.L_BRACK));
-            tokenArray.consumeToken(TokenType.ASSIGN);
+                tokenArray.consumeToken(Token.Type.R_BRACK);
+            } while (tokenArray.checkAndSkip(Token.Type.L_BRACK));
+            tokenArray.consumeToken(Token.Type.ASSIGN);
             Ast.ConstInitVal constInitVal = parseConstInitVal();
             return new Ast.ConstDef(ident, addExps, constInitVal);
         } else {
-            tokenArray.consumeToken(TokenType.ASSIGN);
+            tokenArray.consumeToken(Token.Type.ASSIGN);
             Ast.ConstInitVal constInitVal = parseConstInitVal();
             return new Ast.ConstDef(ident, constInitVal);
         }
@@ -91,16 +89,16 @@ public class Parser {
     }
 
     private Ast.ConstInitVal parseConstInitVal() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_BRACE)) {
-            if(tokenArray.checkAndSkip(TokenType.R_BRACE)) {
+        if(tokenArray.checkAndSkip(Token.Type.L_BRACE)) {
+            if(tokenArray.checkAndSkip(Token.Type.R_BRACE)) {
                 return new Ast.ConstInitVal();
             } else {
                 ArrayList<Ast.ConstInitVal> constInitVals = new ArrayList<Ast.ConstInitVal>();
                 do {
                     Ast.ConstInitVal constInitVal = parseConstInitVal();
                     constInitVals.add(constInitVal);
-                } while (tokenArray.checkAndSkip(TokenType.COMMA));
-                tokenArray.consumeToken(TokenType.R_BRACE);
+                } while (tokenArray.checkAndSkip(Token.Type.COMMA));
+                tokenArray.consumeToken(Token.Type.R_BRACE);
                 return new Ast.ConstInitVal(constInitVals);
             }
         } else {
@@ -115,8 +113,8 @@ public class Parser {
         do {
             Ast.VarDef varDef = parseVarDef();
             varDefs.add(varDef);
-        } while (tokenArray.checkAndSkip(TokenType.COMMA));
-        tokenArray.consumeToken(TokenType.SEMI);
+        } while (tokenArray.checkAndSkip(Token.Type.COMMA));
+        tokenArray.consumeToken(Token.Type.SEMI);
         return new Ast.VarDecl(btype, varDefs);
     }
 
@@ -124,21 +122,21 @@ public class Parser {
         Ast.Ident ident = parseIdent();
         ArrayList<Ast.VarSuffix> varSuffixes = new ArrayList<Ast.VarSuffix>();
         ArrayList<Ast.AddExp> addExps = new ArrayList<>();
-        if(tokenArray.check(TokenType.L_BRACK)) {
+        if(tokenArray.check(Token.Type.L_BRACK)) {
             do {
                 Ast.VarSuffix varSuffix = parseVarSuffix();
                 varSuffixes.add(varSuffix);
-            } while (tokenArray.check(TokenType.L_BRACK));
+            } while (tokenArray.check(Token.Type.L_BRACK));
             for (Ast.VarSuffix varSuffix:
                  varSuffixes) {
                 addExps.add(varSuffix.getExp());
             }
-            if (tokenArray.checkAndSkip(TokenType.ASSIGN)) {
+            if (tokenArray.checkAndSkip(Token.Type.ASSIGN)) {
                 Ast.VarInitVal initVal = parseInitVal();
                 return new Ast.VarDef(ident, addExps, initVal);
             }
             return new Ast.VarDef(ident, addExps);
-        } else if (tokenArray.checkAndSkip(TokenType.ASSIGN)) {
+        } else if (tokenArray.checkAndSkip(Token.Type.ASSIGN)) {
             Ast.VarInitVal initVal = parseInitVal();
             return new Ast.VarDef(ident, initVal);
         } else {
@@ -147,16 +145,16 @@ public class Parser {
     }
 
     private Ast.VarInitVal parseInitVal() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_BRACE)) {
-            if(tokenArray.checkAndSkip(TokenType.R_BRACE)) {
+        if(tokenArray.checkAndSkip(Token.Type.L_BRACE)) {
+            if(tokenArray.checkAndSkip(Token.Type.R_BRACE)) {
                 return new Ast.VarInitVal();
             } else {
                 ArrayList<Ast.VarInitVal> initVals = new ArrayList<Ast.VarInitVal>();
                 do {
                     Ast.VarInitVal initVal = parseInitVal();
                     initVals.add(initVal);
-                } while (tokenArray.checkAndSkip(TokenType.COMMA));
-                tokenArray.consumeToken(TokenType.R_BRACE);
+                } while (tokenArray.checkAndSkip(Token.Type.COMMA));
+                tokenArray.consumeToken(Token.Type.R_BRACE);
                 return new Ast.VarInitVal(initVals);
             }
         } else {
@@ -166,9 +164,9 @@ public class Parser {
     }
 
     private Ast.Block parseBlock() throws SyntaxError {
-        tokenArray.consumeToken(TokenType.L_BRACE);
+        tokenArray.consumeToken(Token.Type.L_BRACE);
         ArrayList<Ast.BlockItem> blockItems = new ArrayList<Ast.BlockItem>();
-        while(!tokenArray.checkAndSkip(TokenType.R_BRACE))
+        while(!tokenArray.checkAndSkip(Token.Type.R_BRACE))
         {
             Ast.BlockItem blockItem = parseBlockItem();
             blockItems.add(blockItem);
@@ -177,7 +175,7 @@ public class Parser {
     }
 
     private Ast.BlockItem parseBlockItem() throws SyntaxError {
-        if (tokenArray.check(TokenType.CONST, TokenType.INT, TokenType.FLOAT)) {
+        if (tokenArray.check(Token.Type.CONST, Token.Type.INT, Token.Type.FLOAT)) {
             return parseDecl();
         } else {
             return parseStmt();
@@ -201,25 +199,25 @@ public class Parser {
      */
     private Ast.Stmt parseStmt() throws SyntaxError {
         Token firstToken = tokenArray.ahead(0);
-        switch (firstToken.tokenType) {
+        switch (firstToken.type) {
             case IDENTIFIER -> {
-                if(tokenArray.ahead(1).tokenType == TokenType.L_PAREN) {
+                if(tokenArray.ahead(1).type == Token.Type.L_PAREN) {
                     Ast.AddExp exp = parseAddExp();
-                    tokenArray.consumeToken(TokenType.SEMI);
+                    tokenArray.consumeToken(Token.Type.SEMI);
                     return new Ast.ExpStmt(exp);
                 }
                 Ast.AddExp exp = parseAddExp();
-                if (!tokenArray.check(TokenType.ASSIGN)) {
+                if (!tokenArray.check(Token.Type.ASSIGN)) {
                     return new Ast.ExpStmt(exp);
                 }
                 Ast.Lval lval = exactLval(exp);
-                tokenArray.consumeToken(TokenType.ASSIGN);
+                tokenArray.consumeToken(Token.Type.ASSIGN);
                 Ast.AddExp rExp = parseAddExp();
-                tokenArray.consumeToken(TokenType.SEMI);
+                tokenArray.consumeToken(Token.Type.SEMI);
                 return new Ast.AssignStmt(lval, rExp);
             }
             case SEMI -> {
-                tokenArray.consumeToken(TokenType.SEMI);
+                tokenArray.consumeToken(Token.Type.SEMI);
                 return new Ast.VoidStmt();
             }
             case L_BRACE -> {
@@ -227,72 +225,72 @@ public class Parser {
                 return new Ast.BlockStmt(block);
             }
             case IF -> {
-                tokenArray.consumeToken(TokenType.IF);
-                tokenArray.consumeToken(TokenType.L_PAREN);
+                tokenArray.consumeToken(Token.Type.IF);
+                tokenArray.consumeToken(Token.Type.L_PAREN);
                 Ast.Cond cond = parseCond();
-                tokenArray.consumeToken(TokenType.R_PAREN);
+                tokenArray.consumeToken(Token.Type.R_PAREN);
                 Ast.Stmt stmt = parseStmt();
-                if(tokenArray.checkAndSkip(TokenType.ELSE)) {
+                if(tokenArray.checkAndSkip(Token.Type.ELSE)) {
                     Ast.Stmt stmt1 = parseStmt();
                     return new Ast.IfElStmt(cond, stmt, stmt1);
                 }
                 return new Ast.IfStmt(cond, stmt);
             }
             case WHILE -> {
-                tokenArray.consumeToken(TokenType.WHILE);
-                tokenArray.consumeToken(TokenType.L_PAREN);
+                tokenArray.consumeToken(Token.Type.WHILE);
+                tokenArray.consumeToken(Token.Type.L_PAREN);
                 Ast.Cond cond = parseCond();
-                tokenArray.consumeToken(TokenType.R_PAREN);
+                tokenArray.consumeToken(Token.Type.R_PAREN);
                 Ast.Stmt stmt = parseStmt();
                 return new Ast.WhileStmt(cond, stmt);
             }
             case FOR -> {
-                tokenArray.consumeToken(TokenType.FOR);
-                tokenArray.consumeToken(TokenType.L_PAREN);
+                tokenArray.consumeToken(Token.Type.FOR);
+                tokenArray.consumeToken(Token.Type.L_PAREN);
                 Ast.Stmt init = null;
                 Ast.Cond cond = null;
                 Ast.Stmt step = null;
-                if(!tokenArray.checkAndSkip(TokenType.SEMI)) {
+                if(!tokenArray.checkAndSkip(Token.Type.SEMI)) {
                     init = parseStmt();
                 }
-                if(!tokenArray.checkAndSkip(TokenType.SEMI)) {
+                if(!tokenArray.checkAndSkip(Token.Type.SEMI)) {
                     cond = parseCond();
-                    tokenArray.consumeToken(TokenType.SEMI);
+                    tokenArray.consumeToken(Token.Type.SEMI);
                 }
-                if(!tokenArray.checkAndSkip(TokenType.R_PAREN)) {
+                if(!tokenArray.checkAndSkip(Token.Type.R_PAREN)) {
                     // 不含分号的赋值语句
                     Ast.AddExp exp = parseAddExp();
                     Ast.Lval lval = exactLval(exp);
-                    tokenArray.consumeToken(TokenType.ASSIGN);
+                    tokenArray.consumeToken(Token.Type.ASSIGN);
                     Ast.AddExp rExp = parseAddExp();
                     step = new Ast.AssignStmt(lval, rExp);
-                    tokenArray.consumeToken(TokenType.R_PAREN);
+                    tokenArray.consumeToken(Token.Type.R_PAREN);
                 }
                 Ast.Stmt stmt = parseStmt();
                 return new Ast.ForStmt(init, cond, step, stmt);
             }
             case BREAK -> {
-                tokenArray.consumeToken(TokenType.BREAK);
-                tokenArray.consumeToken(TokenType.SEMI);
+                tokenArray.consumeToken(Token.Type.BREAK);
+                tokenArray.consumeToken(Token.Type.SEMI);
                 return new Ast.BreakStmt();
             }
             case CONTINUE -> {
-                tokenArray.consumeToken(TokenType.CONTINUE);
-                tokenArray.consumeToken(TokenType.SEMI);
+                tokenArray.consumeToken(Token.Type.CONTINUE);
+                tokenArray.consumeToken(Token.Type.SEMI);
                 return new Ast.ContinueStmt();
             }
             case RETURN -> {
-                tokenArray.consumeToken(TokenType.RETURN);
-                if(tokenArray.checkAndSkip(TokenType.SEMI)) {
+                tokenArray.consumeToken(Token.Type.RETURN);
+                if(tokenArray.checkAndSkip(Token.Type.SEMI)) {
                     return new Ast.ReturnStmt();
                 }
                 Ast.AddExp exp = parseAddExp();
-                tokenArray.consumeToken(TokenType.SEMI);
+                tokenArray.consumeToken(Token.Type.SEMI);
                 return new Ast.ReturnStmt(exp);
             }
             default -> {
                 Ast.AddExp exp = parseAddExp();
-                tokenArray.consumeToken(TokenType.SEMI);
+                tokenArray.consumeToken(Token.Type.SEMI);
                 return new Ast.ExpStmt(exp);
             }
         }
@@ -307,7 +305,7 @@ public class Parser {
         do {
             Ast.LAndExp lAndExp = parseLAndExp();
             lAndExps.add(lAndExp);
-        } while (tokenArray.checkAndSkip(TokenType.LOR));
+        } while (tokenArray.checkAndSkip(Token.Type.LOR));
         return new Ast.LOrExp(lAndExps);
     }
 
@@ -316,7 +314,7 @@ public class Parser {
         do {
             Ast.EqExp eqExp = parseEqExp();
             eqExps.add(eqExp);
-        } while (tokenArray.checkAndSkip(TokenType.LAND));
+        } while (tokenArray.checkAndSkip(Token.Type.LAND));
         return new Ast.LAndExp(eqExps);
     }
 
@@ -326,11 +324,11 @@ public class Parser {
         do {
             Ast.RelExp relExp = parseRelExp();
             relExps.add(relExp);
-            if (tokenArray.check(TokenType.EQ, TokenType.NE)) {
+            if (tokenArray.check(Token.Type.EQ, Token.Type.NE)) {
                 Token eqOp = tokenArray.getToken();
                 eqOps.add(eqOp);
             }
-        } while (tokenArray.checkAndSkip(TokenType.EQ, TokenType.NE));
+        } while (tokenArray.checkAndSkip(Token.Type.EQ, Token.Type.NE));
         return new Ast.EqExp(relExps, eqOps);
     }
 
@@ -340,11 +338,11 @@ public class Parser {
         do {
             Ast.AddExp addExp = parseAddExp();
             addExps.add(addExp);
-            if (tokenArray.check(TokenType.LE, TokenType.GE, TokenType.LT, TokenType.GT)) {
+            if (tokenArray.check(Token.Type.LE, Token.Type.GE, Token.Type.LT, Token.Type.GT)) {
                 Token relOp = tokenArray.getToken();
                 relOps.add(relOp);
             }
-        } while (tokenArray.checkAndSkip(TokenType.LE, TokenType.GE, TokenType.LT, TokenType.GT));
+        } while (tokenArray.checkAndSkip(Token.Type.LE, Token.Type.GE, Token.Type.LT, Token.Type.GT));
         return new Ast.RelExp(addExps, relOps);
     }
 
@@ -354,17 +352,17 @@ public class Parser {
         do {
             Ast.FuncFParam funcFParam = parseFuncFParam();
             funcFParams.add(funcFParam);
-        } while (tokenArray.checkAndSkip(TokenType.COMMA));
+        } while (tokenArray.checkAndSkip(Token.Type.COMMA));
         return funcFParams;
     }
 
     private Ast.Btype parseBtype() throws SyntaxError {
-        Token type = tokenArray.consumeToken(TokenType.INT, TokenType.FLOAT);
+        Token type = tokenArray.consumeToken(Token.Type.INT, Token.Type.FLOAT);
         return new Ast.Btype(type);
     }
 
     private Ast.Ident parseIdent() throws SyntaxError {
-        Token ident = tokenArray.consumeToken(TokenType.IDENTIFIER);
+        Token ident = tokenArray.consumeToken(Token.Type.IDENTIFIER);
         return new Ast.Ident(ident);
     }
 
@@ -372,13 +370,13 @@ public class Parser {
         Ast.Btype btype = parseBtype();
         Ast.Ident ident = parseIdent();
         ArrayList<Ast.VarSuffix> varSuffixes = new ArrayList<>();
-        if (tokenArray.check(TokenType.L_BRACK) && tokenArray.check(1, TokenType.R_BRACK)) {
-            tokenArray.consumeToken(TokenType.L_BRACK);
-            tokenArray.consumeToken(TokenType.R_BRACK);
+        if (tokenArray.check(Token.Type.L_BRACK) && tokenArray.check(1, Token.Type.R_BRACK)) {
+            tokenArray.consumeToken(Token.Type.L_BRACK);
+            tokenArray.consumeToken(Token.Type.R_BRACK);
             varSuffixes.add(new Ast.VarSuffix(true));
         }
 
-        while (!(tokenArray.check(TokenType.R_PAREN) || tokenArray.check(TokenType.COMMA))) {
+        while (!(tokenArray.check(Token.Type.R_PAREN) || tokenArray.check(Token.Type.COMMA))) {
             Ast.VarSuffix varSuffix = parseVarSuffix();
             varSuffixes.add(varSuffix);
         }
@@ -386,9 +384,9 @@ public class Parser {
     }
 
     private Ast.VarSuffix parseVarSuffix() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_BRACK)) {
+        if(tokenArray.checkAndSkip(Token.Type.L_BRACK)) {
             Ast.AddExp exp = parseAddExp();
-            tokenArray.consumeToken(TokenType.R_BRACK);
+            tokenArray.consumeToken(Token.Type.R_BRACK);
             return new Ast.VarSuffix(exp);
         } else {
             return new Ast.VarSuffix();
@@ -408,13 +406,13 @@ public class Parser {
     }
 
     private Ast.AddExpSuffix parseAddExpSuffix() throws SyntaxError {
-        if (tokenArray.check(TokenType.ADD)) {
-            Token addOp = tokenArray.consumeToken(TokenType.ADD);
+        if (tokenArray.check(Token.Type.ADD)) {
+            Token addOp = tokenArray.consumeToken(Token.Type.ADD);
             Ast.MulExp mulExp = parseMulExp();
             Ast.AddExpSuffix addExpSuffix = parseAddExpSuffix();
             return new Ast.AddExpSuffix(mulExp, addExpSuffix, addOp);
-        } else if (tokenArray.check(TokenType.SUB)) {
-            Token subOp = tokenArray.consumeToken(TokenType.SUB);
+        } else if (tokenArray.check(Token.Type.SUB)) {
+            Token subOp = tokenArray.consumeToken(Token.Type.SUB);
             Ast.MulExp mulExp = parseMulExp();
             Ast.AddExpSuffix addExpSuffix = parseAddExpSuffix();
             return new Ast.AddExpSuffix(mulExp, addExpSuffix, subOp);
@@ -424,30 +422,30 @@ public class Parser {
     }
 
     private Ast.UnaryExp parseUnaryExp() throws SyntaxError {
-        if(tokenArray.check(TokenType.IDENTIFIER) && tokenArray.check(1, TokenType.L_PAREN)) {
+        if(tokenArray.check(Token.Type.IDENTIFIER) && tokenArray.check(1, Token.Type.L_PAREN)) {
             Ast.Ident ident = parseIdent();
-            tokenArray.consumeToken(TokenType.L_PAREN);
-            if(tokenArray.checkAndSkip(TokenType.R_PAREN)) {
+            tokenArray.consumeToken(Token.Type.L_PAREN);
+            if(tokenArray.checkAndSkip(Token.Type.R_PAREN)) {
                 return new Ast.UnaryExp(ident);
             }
-            if (tokenArray.check(TokenType.STR)) {
+            if (tokenArray.check(Token.Type.STR)) {
 //                if(!ident.identifier.content.equals(Manager.ExternFunc.PRINTF.getName())) {
 //                    throw new SyntaxError("Unexpeted string");
 //                }
-                Token str = tokenArray.consumeToken(TokenType.STR);
-                if (tokenArray.checkAndSkip(TokenType.COMMA)) {
+                Token str = tokenArray.consumeToken(Token.Type.STR);
+                if (tokenArray.checkAndSkip(Token.Type.COMMA)) {
                     Ast.FuncRParams funcRParams = parseFuncRParams();
-                    tokenArray.consumeToken(TokenType.R_PAREN);
+                    tokenArray.consumeToken(Token.Type.R_PAREN);
                     return new Ast.UnaryExp(ident, funcRParams, str);
                 }
-                tokenArray.consumeToken(TokenType.R_PAREN);
+                tokenArray.consumeToken(Token.Type.R_PAREN);
                 return new Ast.UnaryExp(ident, str);
             }
             Ast.FuncRParams funcRParams = parseFuncRParams();
-            tokenArray.consumeToken(TokenType.R_PAREN);
+            tokenArray.consumeToken(Token.Type.R_PAREN);
             return new Ast.UnaryExp(ident, funcRParams);
-        } else if (tokenArray.check(TokenType.NOT, TokenType.ADD, TokenType.SUB)) {
-            Token unaryOp = tokenArray.consumeToken(TokenType.NOT, TokenType.ADD, TokenType.SUB);
+        } else if (tokenArray.check(Token.Type.NOT, Token.Type.ADD, Token.Type.SUB)) {
+            Token unaryOp = tokenArray.consumeToken(Token.Type.NOT, Token.Type.ADD, Token.Type.SUB);
             Ast.UnaryExp unaryExp = parseUnaryExp();
             return new Ast.UnaryExp(unaryOp, unaryExp);
         } else {
@@ -456,8 +454,8 @@ public class Parser {
     }
 
     private Ast.MulExpSuffix parseMulExpSuffix() throws SyntaxError {
-        if(tokenArray.check(TokenType.MUL, TokenType.DIV, TokenType.MOD)) {
-            Token mulOp = tokenArray.consumeToken(TokenType.MUL, TokenType.DIV, TokenType.MOD);
+        if(tokenArray.check(Token.Type.MUL, Token.Type.DIV, Token.Type.MOD)) {
+            Token mulOp = tokenArray.consumeToken(Token.Type.MUL, Token.Type.DIV, Token.Type.MOD);
             Ast.UnaryExp unaryExp = parseUnaryExp();
             Ast.MulExpSuffix mulExpSuffix = parseMulExpSuffix();
             return new Ast.MulExpSuffix(unaryExp, mulExpSuffix, mulOp);
@@ -467,14 +465,14 @@ public class Parser {
     }
 
     private Ast.PrimaryExp parsePrimaryExp() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_PAREN)) {
+        if(tokenArray.checkAndSkip(Token.Type.L_PAREN)) {
             Ast.AddExp exp = parseAddExp();
-            tokenArray.consumeToken(TokenType.R_PAREN);
+            tokenArray.consumeToken(Token.Type.R_PAREN);
             return new Ast.PrimaryExp(exp);
-        } else if (tokenArray.check(TokenType.IDENTIFIER)) {
+        } else if (tokenArray.check(Token.Type.IDENTIFIER)) {
             return new Ast.PrimaryExp(parseLval());
         } else {
-            Token number = tokenArray.consumeToken(TokenType.DEC_INT, TokenType.OCT_INT, TokenType.HEX_INT, TokenType.DEC_FLOAT, TokenType.HEX_FLOAT);
+            Token number = tokenArray.consumeToken(Token.Type.DEC_INT, Token.Type.OCT_INT, Token.Type.HEX_INT, Token.Type.DEC_FLOAT, Token.Type.HEX_FLOAT);
             return new Ast.PrimaryExp(number);
         }
     }
@@ -484,7 +482,7 @@ public class Parser {
         do {
             Ast.AddExp addExp = parseAddExp();
             funcRparams.add(addExp);
-        } while (tokenArray.checkAndSkip(TokenType.COMMA));
+        } while (tokenArray.checkAndSkip(Token.Type.COMMA));
         return new Ast.FuncRParams(funcRparams);
     }
 
@@ -495,13 +493,13 @@ public class Parser {
     }
 
     private Ast.LvalSuffix parseLvalSuffix() throws SyntaxError {
-        if(tokenArray.checkAndSkip(TokenType.L_BRACK)) {
-            if (tokenArray.checkAndSkip(TokenType.R_BRACK)) {
+        if(tokenArray.checkAndSkip(Token.Type.L_BRACK)) {
+            if (tokenArray.checkAndSkip(Token.Type.R_BRACK)) {
                 Ast.LvalSuffix lvalSuffix = parseLvalSuffix();
                 return new Ast.LvalSuffix(lvalSuffix);
             }
             Ast.AddExp exp = parseAddExp();
-            tokenArray.consumeToken(TokenType.R_BRACK);
+            tokenArray.consumeToken(Token.Type.R_BRACK);
             Ast.LvalSuffix lvalSuffix = parseLvalSuffix();
             return new Ast.LvalSuffix(exp, lvalSuffix);
         } else {

@@ -2,7 +2,6 @@ package frontend;
 
 import exception.SemanticError;
 import frontend.lexer.Token;
-import frontend.lexer.TokenType;
 import frontend.semantic.Calculator;
 import frontend.semantic.InitValue;
 import frontend.semantic.SymTable;
@@ -90,10 +89,10 @@ public class Visitor {
         if (currentSymTable.hasSymbol(ident, false)) {
             throw new SemanticError("Duplicated variable define" + ident.identifier.content);
         }
-        Type defType = switch (btype.type.tokenType) {
-            case INT -> Type.BasicType.I32_TYPE;
-            case FLOAT -> Type.BasicType.F32_TYPE;
-            default -> throw new SemanticError("Wrong Type of variable" + btype.type.tokenType);
+        Type defType = switch (btype.type.type) {
+            case INT -> mir.Type.BasicType.I32_TYPE;
+            case FLOAT -> mir.Type.BasicType.F32_TYPE;
+            default -> throw new SemanticError("Wrong Type of variable" + btype.type.type);
         };
         //计算数组的维度
         Calculator calculator = new Calculator(currentSymTable);
@@ -122,9 +121,9 @@ public class Visitor {
             }
         } else {
             if (defType.isInt32Ty()) {
-                initValue = new InitValue.ValueInit(new Constant.ConstantInt(0), Type.BasicType.I32_TYPE);
+                initValue = new InitValue.ValueInit(new Constant.ConstantInt(0), mir.Type.BasicType.I32_TYPE);
             } else if (defType.isFloatTy()) {
-                initValue = new InitValue.ValueInit(new Constant.ConstantFloat(0), Type.BasicType.F32_TYPE);
+                initValue = new InitValue.ValueInit(new Constant.ConstantFloat(0), mir.Type.BasicType.F32_TYPE);
             } else if (defType.isArrayTy()) {
                 initValue = new InitValue.ZeroArrayInit(defType);
             }
@@ -193,7 +192,7 @@ public class Visitor {
         int size = arrayType.getFlattenSize() * 4;
         Value ptr = address;
         if (!((Type.PointerType) address.getType()).getInnerType().isInt32Ty()) {
-            ptr = new Instruction.BitCast(currentBB, ptr, new Type.PointerType(Type.BasicType.I32_TYPE));
+            ptr = new Instruction.BitCast(currentBB, ptr, new Type.PointerType(mir.Type.BasicType.I32_TYPE));
         }
         ArrayList<Value> params = new ArrayList<>();
         params.add(ptr);
@@ -357,16 +356,16 @@ public class Visitor {
         Object val = calculator.evalConstExp(exp);
         if (type.isInt32Ty()) {
             if (val instanceof Integer) {
-                return new InitValue.ValueInit(new Constant.ConstantInt((int) val), Type.BasicType.I32_TYPE);
+                return new InitValue.ValueInit(new Constant.ConstantInt((int) val), mir.Type.BasicType.I32_TYPE);
             } else {
-                return new InitValue.ValueInit(new Constant.ConstantInt((int) ((float) val)), Type.BasicType.I32_TYPE);
+                return new InitValue.ValueInit(new Constant.ConstantInt((int) ((float) val)), mir.Type.BasicType.I32_TYPE);
             }
         } else {
             assert type.isFloatTy();
             if (val instanceof Integer) {
-                return new InitValue.ValueInit(new Constant.ConstantFloat((float) ((int) val)), Type.BasicType.F32_TYPE);
+                return new InitValue.ValueInit(new Constant.ConstantFloat((float) ((int) val)), mir.Type.BasicType.F32_TYPE);
             } else {
-                return new InitValue.ValueInit(new Constant.ConstantFloat((float) val), Type.BasicType.F32_TYPE);
+                return new InitValue.ValueInit(new Constant.ConstantFloat((float) val), mir.Type.BasicType.F32_TYPE);
             }
         }
     }
@@ -418,25 +417,25 @@ public class Visitor {
         if (!addExpSuffix.hasMulExp()) {
             return addExpPerfix;
         }
-        switch (addExpSuffix.getAddOp().tokenType) {
+        switch (addExpSuffix.getAddOp().type) {
             case ADD -> {
                 Value val = visitMulExp(addExpSuffix.getMulExp());
                 Value perfix;
-                if (val.getType() == Type.BasicType.F32_TYPE || addExpPerfix.getType() == Type.BasicType.F32_TYPE) {
+                if (val.getType() == mir.Type.BasicType.F32_TYPE || addExpPerfix.getType() == mir.Type.BasicType.F32_TYPE) {
                     if (val instanceof Constant && addExpPerfix instanceof Constant) {
-                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue()
-                                + (float) castConstantType((Constant) addExpPerfix, Type.BasicType.F32_TYPE).getConstValue());
+                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                + (float) castConstantType((Constant) addExpPerfix, mir.Type.BasicType.F32_TYPE).getConstValue());
                     } else {
-                        perfix = new Instruction.BinaryOperation.FAdd(currentBB, Type.BasicType.F32_TYPE, castType(addExpPerfix, Type.BasicType.F32_TYPE), castType(val, Type.BasicType.F32_TYPE));
+                        perfix = new Instruction.BinaryOperation.FAdd(currentBB, mir.Type.BasicType.F32_TYPE, castType(addExpPerfix, mir.Type.BasicType.F32_TYPE), castType(val, mir.Type.BasicType.F32_TYPE));
                     }
                     //return visitAddExpSuffix(perfix, addExpSuffix.getAddExpSuffix());
                     return perfix;
                 }
                 if (val instanceof Constant && addExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue()
-                            + (int) castConstantType((Constant) addExpPerfix, Type.BasicType.I32_TYPE).getConstValue());
+                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue()
+                            + (int) castConstantType((Constant) addExpPerfix, mir.Type.BasicType.I32_TYPE).getConstValue());
                 } else {
-                    perfix = new Instruction.BinaryOperation.Add(currentBB, Type.BasicType.I32_TYPE, castType(addExpPerfix, Type.BasicType.I32_TYPE), castType(val, Type.BasicType.I32_TYPE));
+                    perfix = new Instruction.BinaryOperation.Add(currentBB, mir.Type.BasicType.I32_TYPE, castType(addExpPerfix, mir.Type.BasicType.I32_TYPE), castType(val, mir.Type.BasicType.I32_TYPE));
                 }
                 //return visitAddExpSuffix(perfix, addExpSuffix.getAddExpSuffix());
                 return perfix;
@@ -444,21 +443,21 @@ public class Visitor {
             case SUB -> {
                 Value val = visitMulExp(addExpSuffix.getMulExp());
                 Value perfix;
-                if (val.getType() == Type.BasicType.F32_TYPE || addExpPerfix.getType() == Type.BasicType.F32_TYPE) {
+                if (val.getType() == mir.Type.BasicType.F32_TYPE || addExpPerfix.getType() == mir.Type.BasicType.F32_TYPE) {
                     if (val instanceof Constant && addExpPerfix instanceof Constant) {
-                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) addExpPerfix, Type.BasicType.F32_TYPE).getConstValue()
-                                - (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue());
+                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) addExpPerfix, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                - (float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue());
                     } else {
-                        perfix = new Instruction.BinaryOperation.FSub(currentBB, Type.BasicType.F32_TYPE, castType(addExpPerfix, Type.BasicType.F32_TYPE), castType(val, Type.BasicType.F32_TYPE));
+                        perfix = new Instruction.BinaryOperation.FSub(currentBB, mir.Type.BasicType.F32_TYPE, castType(addExpPerfix, mir.Type.BasicType.F32_TYPE), castType(val, mir.Type.BasicType.F32_TYPE));
                     }
                     //return visitAddExpSuffix(perfix, addExpSuffix.getAddExpSuffix());
                     return perfix;
                 }
                 if (val instanceof Constant && addExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) addExpPerfix, Type.BasicType.I32_TYPE).getConstValue()
-                            - (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue());
+                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) addExpPerfix, mir.Type.BasicType.I32_TYPE).getConstValue()
+                            - (int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue());
                 } else {
-                    perfix = new Instruction.BinaryOperation.Sub(currentBB, Type.BasicType.I32_TYPE, castType(addExpPerfix, Type.BasicType.I32_TYPE), castType(val, Type.BasicType.I32_TYPE));
+                    perfix = new Instruction.BinaryOperation.Sub(currentBB, mir.Type.BasicType.I32_TYPE, castType(addExpPerfix, mir.Type.BasicType.I32_TYPE), castType(val, mir.Type.BasicType.I32_TYPE));
                 }
                 //return visitAddExpSuffix(perfix, addExpSuffix.getAddExpSuffix());
                 return perfix;
@@ -471,7 +470,7 @@ public class Visitor {
         if (!mulExpSuffix.hasUnary()) {
             return mulExpPerfix;
         }
-        switch (mulExpSuffix.getMulOp().tokenType) {
+        switch (mulExpSuffix.getMulOp().type) {
             case MUL -> {
                 Value val = visitUnaryExp(mulExpSuffix.getUnaryExp());
                 Value perfix;
@@ -483,60 +482,60 @@ public class Visitor {
                     assert mulExpPerfix.getType() instanceof Type.BasicType;
                     return castConstantType(new Constant.ConstantInt(0), (Type.BasicType) mulExpPerfix.getType());
                 }
-                if (val.getType() == Type.BasicType.F32_TYPE || mulExpPerfix.getType() == Type.BasicType.F32_TYPE) {
+                if (val.getType() == mir.Type.BasicType.F32_TYPE || mulExpPerfix.getType() == mir.Type.BasicType.F32_TYPE) {
                     if (val instanceof Constant && mulExpPerfix instanceof Constant) {
-                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue()
-                                * (float) castConstantType((Constant) mulExpPerfix, Type.BasicType.F32_TYPE).getConstValue());
+                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                * (float) castConstantType((Constant) mulExpPerfix, mir.Type.BasicType.F32_TYPE).getConstValue());
                     } else {
-                        perfix = new Instruction.BinaryOperation.FMul(currentBB, Type.BasicType.F32_TYPE, castType(mulExpPerfix, Type.BasicType.F32_TYPE), castType(val, Type.BasicType.F32_TYPE));
+                        perfix = new Instruction.BinaryOperation.FMul(currentBB, mir.Type.BasicType.F32_TYPE, castType(mulExpPerfix, mir.Type.BasicType.F32_TYPE), castType(val, mir.Type.BasicType.F32_TYPE));
                     }
                     return perfix;
                 }
                 if (val instanceof Constant && mulExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue()
-                            * (int) castConstantType((Constant) mulExpPerfix, Type.BasicType.I32_TYPE).getConstValue());
+                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue()
+                            * (int) castConstantType((Constant) mulExpPerfix, mir.Type.BasicType.I32_TYPE).getConstValue());
                 } else {
-                    perfix = new Instruction.BinaryOperation.Mul(currentBB, Type.BasicType.I32_TYPE, castType(mulExpPerfix, Type.BasicType.I32_TYPE), castType(val, Type.BasicType.I32_TYPE));
+                    perfix = new Instruction.BinaryOperation.Mul(currentBB, mir.Type.BasicType.I32_TYPE, castType(mulExpPerfix, mir.Type.BasicType.I32_TYPE), castType(val, mir.Type.BasicType.I32_TYPE));
                 }
                 return perfix;
             }
             case DIV -> {
                 Value val = visitUnaryExp(mulExpSuffix.getUnaryExp());
                 Value perfix;
-                if (val.getType() == Type.BasicType.F32_TYPE || mulExpPerfix.getType() == Type.BasicType.F32_TYPE) {
+                if (val.getType() == mir.Type.BasicType.F32_TYPE || mulExpPerfix.getType() == mir.Type.BasicType.F32_TYPE) {
                     if (val instanceof Constant && mulExpPerfix instanceof Constant) {
-                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) mulExpPerfix, Type.BasicType.F32_TYPE).getConstValue()
-                                / (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue());
+                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) mulExpPerfix, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                / (float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue());
                     } else {
-                        perfix = new Instruction.BinaryOperation.FDiv(currentBB, Type.BasicType.F32_TYPE, castType(mulExpPerfix, Type.BasicType.F32_TYPE), castType(val, Type.BasicType.F32_TYPE));
+                        perfix = new Instruction.BinaryOperation.FDiv(currentBB, mir.Type.BasicType.F32_TYPE, castType(mulExpPerfix, mir.Type.BasicType.F32_TYPE), castType(val, mir.Type.BasicType.F32_TYPE));
                     }
                     return perfix;
                 }
                 if (val instanceof Constant && mulExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) mulExpPerfix, Type.BasicType.I32_TYPE).getConstValue()
-                            / (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue());
+                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) mulExpPerfix, mir.Type.BasicType.I32_TYPE).getConstValue()
+                            / (int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue());
                 } else {
-                    perfix = new Instruction.BinaryOperation.Div(currentBB, Type.BasicType.I32_TYPE, castType(mulExpPerfix, Type.BasicType.I32_TYPE), castType(val, Type.BasicType.I32_TYPE));
+                    perfix = new Instruction.BinaryOperation.Div(currentBB, mir.Type.BasicType.I32_TYPE, castType(mulExpPerfix, mir.Type.BasicType.I32_TYPE), castType(val, mir.Type.BasicType.I32_TYPE));
                 }
                 return perfix;
             }
             case MOD -> {
                 Value val = visitUnaryExp(mulExpSuffix.getUnaryExp());
                 Value perfix;
-                if (val.getType() == Type.BasicType.F32_TYPE || mulExpPerfix.getType() == Type.BasicType.F32_TYPE) {
+                if (val.getType() == mir.Type.BasicType.F32_TYPE || mulExpPerfix.getType() == mir.Type.BasicType.F32_TYPE) {
                     if (val instanceof Constant && mulExpPerfix instanceof Constant) {
-                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) mulExpPerfix, Type.BasicType.F32_TYPE).getConstValue()
-                                % (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue());
+                        perfix = new Constant.ConstantFloat((float) castConstantType((Constant) mulExpPerfix, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                % (float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue());
                     } else {
-                        perfix = new Instruction.BinaryOperation.FRem(currentBB, Type.BasicType.F32_TYPE, castType(mulExpPerfix, Type.BasicType.F32_TYPE), castType(val, Type.BasicType.F32_TYPE));
+                        perfix = new Instruction.BinaryOperation.FRem(currentBB, mir.Type.BasicType.F32_TYPE, castType(mulExpPerfix, mir.Type.BasicType.F32_TYPE), castType(val, mir.Type.BasicType.F32_TYPE));
                     }
                     return perfix;
                 }
                 if (val instanceof Constant && mulExpPerfix instanceof Constant) {
-                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) mulExpPerfix, Type.BasicType.I32_TYPE).getConstValue()
-                            % (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue());
+                    perfix = new Constant.ConstantInt((int) castConstantType((Constant) mulExpPerfix, mir.Type.BasicType.I32_TYPE).getConstValue()
+                            % (int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue());
                 } else {
-                    perfix = new Instruction.BinaryOperation.Rem(currentBB, Type.BasicType.I32_TYPE, castType(mulExpPerfix, Type.BasicType.I32_TYPE), castType(val, Type.BasicType.I32_TYPE));
+                    perfix = new Instruction.BinaryOperation.Rem(currentBB, mir.Type.BasicType.I32_TYPE, castType(mulExpPerfix, mir.Type.BasicType.I32_TYPE), castType(val, mir.Type.BasicType.I32_TYPE));
                 }
                 return perfix;
             }
@@ -551,47 +550,47 @@ public class Visitor {
             return visitFunctionCall(exp.getIdent(), exp.getFuncRParams(), exp.getSTR());
         } else if (exp.isSubUnaryExp()) {
             Value ret = visitUnaryExp(exp.getUnaryExp());
-            if (exp.getUnaryOp().tokenType == TokenType.ADD) {
+            if (exp.getUnaryOp().type == Token.Type.ADD) {
                 return ret;
-            } else if (exp.getUnaryOp().tokenType == TokenType.SUB) {
+            } else if (exp.getUnaryOp().type == Token.Type.SUB) {
                 if (ret instanceof Constant) {
-                    if (ret.getType() == Type.BasicType.F32_TYPE) {
+                    if (ret.getType() == mir.Type.BasicType.F32_TYPE) {
                         return new Constant.ConstantFloat(-(float) ((Constant) ret).getConstValue());
-                    } else if (ret.getType() == Type.BasicType.I32_TYPE) {
+                    } else if (ret.getType() == mir.Type.BasicType.I32_TYPE) {
                         return new Constant.ConstantInt(-(int) ((Constant) ret).getConstValue());
-                    } else if (ret.getType() == Type.BasicType.I1_TYPE) {
+                    } else if (ret.getType() == mir.Type.BasicType.I1_TYPE) {
                         return new Constant.ConstantInt(-(int) ((Constant) ret).getConstValue());
                     } else {
                         throw new SemanticError("Bad Operand of Unary Exp");
                     }
                 }
-                if (ret.getType() == Type.BasicType.F32_TYPE) {
-                    return new Instruction.BinaryOperation.FSub(currentBB, Type.BasicType.F32_TYPE, new Constant.ConstantFloat(0), ret);
-                } else if (ret.getType() == Type.BasicType.I32_TYPE) {
-                    return new Instruction.BinaryOperation.Sub(currentBB, Type.BasicType.I32_TYPE, new Constant.ConstantInt(0), ret);
-                } else if (ret.getType() == Type.BasicType.I1_TYPE) {
-                    return new Instruction.BinaryOperation.Sub(currentBB, Type.BasicType.I1_TYPE, new Constant.ConstantInt(0), castType(ret, Type.BasicType.I32_TYPE));
+                if (ret.getType() == mir.Type.BasicType.F32_TYPE) {
+                    return new Instruction.BinaryOperation.FSub(currentBB, mir.Type.BasicType.F32_TYPE, new Constant.ConstantFloat(0), ret);
+                } else if (ret.getType() == mir.Type.BasicType.I32_TYPE) {
+                    return new Instruction.BinaryOperation.Sub(currentBB, mir.Type.BasicType.I32_TYPE, new Constant.ConstantInt(0), ret);
+                } else if (ret.getType() == mir.Type.BasicType.I1_TYPE) {
+                    return new Instruction.BinaryOperation.Sub(currentBB, mir.Type.BasicType.I1_TYPE, new Constant.ConstantInt(0), castType(ret, mir.Type.BasicType.I32_TYPE));
                 } else {
                     throw new SemanticError("Bad Operand of Unary Exp");
                 }
-            } else if (exp.getUnaryOp().tokenType == TokenType.NOT) {
+            } else if (exp.getUnaryOp().type == Token.Type.NOT) {
                 if (ret instanceof Constant) {
-                    if (ret.getType() == Type.BasicType.F32_TYPE) {
+                    if (ret.getType() == mir.Type.BasicType.F32_TYPE) {
                         return new Constant.ConstantBool((float) ((Constant) ret).getConstValue() == 0 ? 1 : 0);
-                    } else if (ret.getType() == Type.BasicType.I32_TYPE) {
+                    } else if (ret.getType() == mir.Type.BasicType.I32_TYPE) {
                         return new Constant.ConstantBool((int) ((Constant) ret).getConstValue() == 0 ? 1 : 0);
-                    } else if (ret.getType() == Type.BasicType.I1_TYPE) {
+                    } else if (ret.getType() == mir.Type.BasicType.I1_TYPE) {
                         return new Constant.ConstantBool((int) ((Constant) ret).getConstValue() == 0 ? 1 : 0);
                     } else {
                         throw new SemanticError("Bad Operand of Unary Exp");
                     }
                 }
-                if (ret.getType() == Type.BasicType.F32_TYPE) {
+                if (ret.getType() == mir.Type.BasicType.F32_TYPE) {
                     return new Instruction.Fcmp(currentBB, Instruction.Fcmp.CondCode.EQ, ret, new Constant.ConstantFloat(0));
-                } else if (ret.getType() == Type.BasicType.I32_TYPE) {
+                } else if (ret.getType() == mir.Type.BasicType.I32_TYPE) {
                     return new Instruction.Icmp(currentBB, Instruction.Icmp.CondCode.EQ, ret, new Constant.ConstantInt(0));
-                } else if (ret.getType() == Type.BasicType.I1_TYPE) {
-                    return new Instruction.Icmp(currentBB, Instruction.Icmp.CondCode.EQ, castType(ret, Type.BasicType.I32_TYPE), new Constant.ConstantInt(0));
+                } else if (ret.getType() == mir.Type.BasicType.I1_TYPE) {
+                    return new Instruction.Icmp(currentBB, Instruction.Icmp.CondCode.EQ, castType(ret, mir.Type.BasicType.I32_TYPE), new Constant.ConstantInt(0));
                 } else {
                     throw new SemanticError("Bad Operand of Unary Exp");
                 }
@@ -677,7 +676,7 @@ public class Visitor {
         boolean hasOffSet = false;
         for (Ast.AddExp exp :
                 lval.getExps()) {
-            Value offset = castType(visitExp(exp), Type.BasicType.I32_TYPE);
+            Value offset = castType(visitExp(exp), mir.Type.BasicType.I32_TYPE);
             hasOffSet = true;
 
             //数组作为参数的情况，即func(a[][1][2]);
@@ -733,7 +732,7 @@ public class Visitor {
                 if (newOffset instanceof Constant && offset instanceof Constant) {
                     newOffset =  new Constant.ConstantInt(((int) ((Constant) newOffset).getConstValue()+ (int) ((Constant) offset).getConstValue()));
                 }  else {
-                    newOffset = new Instruction.BinaryOperation.Add(currentBB, Type.BasicType.I32_TYPE, newOffset, offset);
+                    newOffset = new Instruction.BinaryOperation.Add(currentBB, mir.Type.BasicType.I32_TYPE, newOffset, offset);
                 }
             } else {
                 assert contentTp instanceof Type.ArrayType;
@@ -746,15 +745,15 @@ public class Visitor {
                         value = new Constant.ConstantInt((int) ((Constant) offset).getConstValue() * ((Type.ArrayType) contentTp).getFlattenSize());
                 } else {
                     if (eleTp instanceof Type.ArrayType)
-                        value = new Instruction.BinaryOperation.Mul(currentBB, Type.BasicType.I32_TYPE, offset,
+                        value = new Instruction.BinaryOperation.Mul(currentBB, mir.Type.BasicType.I32_TYPE, offset,
                                 new Constant.ConstantInt(((Type.ArrayType) contentTp).getFlattenSize() / ((Type.ArrayType) eleTp).getFlattenSize()));
                     else
-                        value = new Instruction.BinaryOperation.Mul(currentBB, Type.BasicType.I32_TYPE, offset, new Constant.ConstantInt(((Type.ArrayType) contentTp).getFlattenSize()));
+                        value = new Instruction.BinaryOperation.Mul(currentBB, mir.Type.BasicType.I32_TYPE, offset, new Constant.ConstantInt(((Type.ArrayType) contentTp).getFlattenSize()));
                 }
                 if (value instanceof Constant && newOffset instanceof Constant) {
                     newOffset = new Constant.ConstantInt(((int) ((Constant) newOffset).getConstValue()+ (int) ((Constant) value).getConstValue()));
                 } else {
-                    newOffset = new Instruction.BinaryOperation.Add(currentBB, Type.BasicType.I32_TYPE, newOffset, value);
+                    newOffset = new Instruction.BinaryOperation.Add(currentBB, mir.Type.BasicType.I32_TYPE, newOffset, value);
                 }
                 contentTp = ((Type.ArrayType) contentTp).getEleType();
             }
@@ -765,8 +764,8 @@ public class Visitor {
     }
 
     private Value visitNumber(Token number) throws SemanticError {
-        if (number.tokenType == TokenType.DEC_FLOAT || number.tokenType == TokenType.HEX_FLOAT) {
-            if (number.tokenType == TokenType.HEX_FLOAT) {
+        if (number.type == Token.Type.DEC_FLOAT || number.type == Token.Type.HEX_FLOAT) {
+            if (number.type == Token.Type.HEX_FLOAT) {
                 if (number.content.contains("0x") || number.content.contains("0X")) {
                     return new Constant.ConstantFloat(Float.intBitsToFloat(new BigInteger(number.content.substring(2).toUpperCase(), 16).intValue()));
                 } else {
@@ -774,15 +773,15 @@ public class Visitor {
                 }
             }
             return new Constant.ConstantFloat(Float.parseFloat(number.content));
-        } else if (number.tokenType == TokenType.DEC_INT || number.tokenType == TokenType.HEX_INT || number.tokenType == TokenType.OCT_INT) {
-            if (number.tokenType == TokenType.HEX_INT) {
+        } else if (number.type == Token.Type.DEC_INT || number.type == Token.Type.HEX_INT || number.type == Token.Type.OCT_INT) {
+            if (number.type == Token.Type.HEX_INT) {
                 if (number.content.contains("0x") || number.content.contains("0X")) {
                     return new Constant.ConstantInt(Integer.parseInt(number.content.substring(2).toUpperCase(), 16));
                 } else {
                     return new Constant.ConstantInt(Integer.parseInt(number.content.toUpperCase(), 16));
                 }
             }
-            if (number.tokenType == TokenType.OCT_INT) {
+            if (number.type == Token.Type.OCT_INT) {
                 return new Constant.ConstantInt(Integer.parseInt(number.content, 8));
             }
             return new Constant.ConstantInt(Integer.parseInt(number.content));
@@ -804,10 +803,10 @@ public class Visitor {
         if (currentSymTable.hasSymbol(ident, false)) {
             throw new SemanticError("Duplicated variable define" + ident.identifier.content);
         }
-        Type defType = switch (btype.type.tokenType) {
-            case INT -> Type.BasicType.I32_TYPE;
-            case FLOAT -> Type.BasicType.F32_TYPE;
-            default -> throw new SemanticError("Wrong Type of variable" + btype.type.tokenType);
+        Type defType = switch (btype.type.type) {
+            case INT -> mir.Type.BasicType.I32_TYPE;
+            case FLOAT -> mir.Type.BasicType.F32_TYPE;
+            default -> throw new SemanticError("Wrong Type of variable" + btype.type.type);
         };
         //计算数组的维度
         Calculator calculator = new Calculator(currentSymTable);
@@ -838,9 +837,9 @@ public class Visitor {
             }
         } else {
             if (defType.isInt32Ty()) {
-                initValue = new InitValue.ValueInit(new Constant.ConstantInt(0), Type.BasicType.I32_TYPE);
+                initValue = new InitValue.ValueInit(new Constant.ConstantInt(0), mir.Type.BasicType.I32_TYPE);
             } else if (defType.isFloatTy()) {
-                initValue = new InitValue.ValueInit(new Constant.ConstantFloat(0), Type.BasicType.F32_TYPE);
+                initValue = new InitValue.ValueInit(new Constant.ConstantFloat(0), mir.Type.BasicType.F32_TYPE);
             } else if (defType.isArrayTy()) {
                 initValue = new InitValue.ZeroArrayInit(defType);
             } else {
@@ -853,10 +852,10 @@ public class Visitor {
 
     private void visitFuncDef(Ast.FuncDef funcDef) throws SemanticError {
         Token funcToken = funcDef.getType();
-        Type funcType = switch (funcToken.tokenType) {
-            case INT -> Type.BasicType.I32_TYPE;
-            case FLOAT -> Type.BasicType.F32_TYPE;
-            case VOID -> Type.VoidType.VOID_TYPE;
+        Type funcType = switch (funcToken.type) {
+            case INT -> mir.Type.BasicType.I32_TYPE;
+            case FLOAT -> mir.Type.BasicType.F32_TYPE;
+            case VOID -> mir.Type.VoidType.VOID_TYPE;
             default -> throw new SemanticError("Bad FuncType");
         };
         Ast.Ident ident = funcDef.getIdent();
@@ -899,7 +898,7 @@ public class Visitor {
         visitBlock(funcDef.getBlock(), true);
 
         if (!currentBB.isTerminated()) {
-            switch (funcToken.tokenType) {
+            switch (funcToken.type) {
                 case VOID -> new Instruction.Return(currentBB);
                 case FLOAT -> new Instruction.Return(currentBB, new Constant.ConstantFloat(0));
                 case INT -> new Instruction.Return(currentBB, new Constant.ConstantInt(0));
@@ -1103,36 +1102,36 @@ public class Visitor {
             } else {
                 if (last.getType().isFloatTy() || val.getType().isFloatTy()) {
                     if (last instanceof Constant && val instanceof Constant) {
-                        last = switch (tokenIterator.next().tokenType) {
+                        last = switch (tokenIterator.next().type) {
                             case EQ ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
-                                            == (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((float) castConstantType((Constant) last, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                            == (float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             case NE ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
-                                            != (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((float) castConstantType((Constant) last, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                            != (float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             default -> throw new SemanticError("Bad EqOp");
                         };
                     } else {
-                        Instruction.Fcmp.CondCode condCode = switch (tokenIterator.next().tokenType) {
+                        Instruction.Fcmp.CondCode condCode = switch (tokenIterator.next().type) {
                             case EQ -> Instruction.Fcmp.CondCode.EQ;
                             case NE -> Instruction.Fcmp.CondCode.NE;
                             default -> throw new SemanticError("Bad EqOp");
                         };
-                        last = new Instruction.Fcmp(currentBB, condCode, castType(last, Type.BasicType.F32_TYPE), castType(val, Type.BasicType.F32_TYPE));
+                        last = new Instruction.Fcmp(currentBB, condCode, castType(last, mir.Type.BasicType.F32_TYPE), castType(val, mir.Type.BasicType.F32_TYPE));
                     }
                 } else {
                     if (last instanceof Constant && val instanceof Constant) {
-                        last = switch (tokenIterator.next().tokenType) {
+                        last = switch (tokenIterator.next().type) {
                             case EQ ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
-                                            == (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((int) castConstantType((Constant) last, mir.Type.BasicType.I32_TYPE).getConstValue()
+                                            == (int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             case NE ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
-                                            != (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((int) castConstantType((Constant) last, mir.Type.BasicType.I32_TYPE).getConstValue()
+                                            != (int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             default -> throw new SemanticError("Bad EqOp");
                         };
                     } else {
-                        Instruction.Icmp.CondCode condCode = switch (tokenIterator.next().tokenType) {
+                        Instruction.Icmp.CondCode condCode = switch (tokenIterator.next().type) {
                             case EQ -> Instruction.Icmp.CondCode.EQ;
                             case NE -> Instruction.Icmp.CondCode.NE;
                             default -> throw new SemanticError("Bad EqOp");
@@ -1142,7 +1141,7 @@ public class Visitor {
                 }
             }
         }
-        return castType(last, Type.BasicType.I1_TYPE);
+        return castType(last, mir.Type.BasicType.I1_TYPE);
     }
 
     /**
@@ -1164,50 +1163,50 @@ public class Visitor {
                 if (last.getType().isFloatTy() || val.getType().isFloatTy()) {
 
                     if (last instanceof Constant && val instanceof Constant) {
-                        last = switch (relOpIterator.next().tokenType) {
+                        last = switch (relOpIterator.next().type) {
                             case LT ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
-                                            < (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((float) castConstantType((Constant) last, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                            < (float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             case LE ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
-                                            <= (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((float) castConstantType((Constant) last, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                            <= (float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             case GT ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
-                                            > (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((float) castConstantType((Constant) last, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                            > (float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             case GE ->
-                                    new Constant.ConstantBool((float) castConstantType((Constant) last, Type.BasicType.F32_TYPE).getConstValue()
-                                            >= (float) castConstantType((Constant) val, Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((float) castConstantType((Constant) last, mir.Type.BasicType.F32_TYPE).getConstValue()
+                                            >= (float) castConstantType((Constant) val, mir.Type.BasicType.F32_TYPE).getConstValue() ? 1 : 0);
                             default -> throw new SemanticError("Bad RelOp");
                         };
                     } else {
-                        Instruction.Fcmp.CondCode condCode = switch (relOpIterator.next().tokenType) {
+                        Instruction.Fcmp.CondCode condCode = switch (relOpIterator.next().type) {
                             case LT -> Instruction.Fcmp.CondCode.OLT;
                             case LE -> Instruction.Fcmp.CondCode.OLE;
                             case GT -> Instruction.Fcmp.CondCode.OGT;
                             case GE -> Instruction.Fcmp.CondCode.OGE;
                             default -> throw new SemanticError("Bad RelOp");
                         };
-                        last = new Instruction.Fcmp(currentBB, condCode, castType(last, Type.BasicType.F32_TYPE), castType(val, Type.BasicType.F32_TYPE));
+                        last = new Instruction.Fcmp(currentBB, condCode, castType(last, mir.Type.BasicType.F32_TYPE), castType(val, mir.Type.BasicType.F32_TYPE));
                     }
                 } else {
                     if (last instanceof Constant && val instanceof Constant) {
-                        last = switch (relOpIterator.next().tokenType) {
+                        last = switch (relOpIterator.next().type) {
                             case LT ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
-                                            < (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((int) castConstantType((Constant) last, mir.Type.BasicType.I32_TYPE).getConstValue()
+                                            < (int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             case LE ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
-                                            <= (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((int) castConstantType((Constant) last, mir.Type.BasicType.I32_TYPE).getConstValue()
+                                            <= (int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             case GT ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
-                                            > (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((int) castConstantType((Constant) last, mir.Type.BasicType.I32_TYPE).getConstValue()
+                                            > (int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             case GE ->
-                                    new Constant.ConstantBool((int) castConstantType((Constant) last, Type.BasicType.I32_TYPE).getConstValue()
-                                            >= (int) castConstantType((Constant) val, Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
+                                    new Constant.ConstantBool((int) castConstantType((Constant) last, mir.Type.BasicType.I32_TYPE).getConstValue()
+                                            >= (int) castConstantType((Constant) val, mir.Type.BasicType.I32_TYPE).getConstValue() ? 1 : 0);
                             default -> throw new SemanticError("Bad RelOp");
                         };
                     } else {
-                        Instruction.Icmp.CondCode condCode = switch ((relOpIterator.next().tokenType)) {
+                        Instruction.Icmp.CondCode condCode = switch ((relOpIterator.next().type)) {
                             case LT -> Instruction.Icmp.CondCode.SLT;
                             case LE -> Instruction.Icmp.CondCode.SLE;
                             case GT -> Instruction.Icmp.CondCode.SGT;
@@ -1360,9 +1359,9 @@ public class Visitor {
 
 
     private Type parseFuncFParam(Ast.FuncFParam funcFParam) throws SemanticError {
-        Type retType = switch (funcFParam.getBtype().type.tokenType) {
-            case INT -> Type.BasicType.I32_TYPE;
-            case FLOAT -> Type.BasicType.F32_TYPE;
+        Type retType = switch (funcFParam.getBtype().type.type) {
+            case INT -> mir.Type.BasicType.I32_TYPE;
+            case FLOAT -> mir.Type.BasicType.F32_TYPE;
             default -> throw new SemanticError("Bad Type of funcFParam");
         };
 
@@ -1371,7 +1370,7 @@ public class Visitor {
         for (Ast.VarSuffix varSuffix :
                 funcFParam.getVarSuffixes()) {
             if (varSuffix.isOmitExp()) {
-                dims.add(new Value(Type.VoidType.VOID_TYPE));
+                dims.add(new Value(mir.Type.VoidType.VOID_TYPE));
             } else {
                 Calculator calculator = new Calculator(currentSymTable);
                 dims.add(new Constant.ConstantInt(calculator.evalConsInt(varSuffix.getExp())));
@@ -1379,7 +1378,7 @@ public class Visitor {
         }
 
         for (int i = dims.size() - 1; i > 0; i--) {
-            if (dims.get(i).getType() == Type.VoidType.VOID_TYPE) {
+            if (dims.get(i).getType() == mir.Type.VoidType.VOID_TYPE) {
                 throw new SemanticError("Only the first dimension can be omitted");
             } else {
                 assert dims.get(i) instanceof Constant.ConstantInt;

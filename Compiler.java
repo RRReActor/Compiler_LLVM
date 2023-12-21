@@ -1,12 +1,10 @@
-import java.io.*;
-import java.util.ArrayList;
-
 import arg.Arg;
 import frontend.Visitor;
 import frontend.lexer.Lexer;
 import frontend.lexer.TokenArray;
 import frontend.syntaxChecker.Ast;
 import frontend.syntaxChecker.Parser;
+import manager.Manager;
 import midend.*;
 import mir.Function;
 import mir.Module;
@@ -24,11 +22,10 @@ public class Compiler {
         try {
             // lex
             //System.err.println("Lexer here");
-            BufferedInputStream src = new BufferedInputStream(arg.srcStream);
+            Manager.BufferReader.init(arg.srcFileName);
             TokenArray tokenArray = new TokenArray();
-            Lexer lexer = new Lexer(src, tokenArray);
-            lexer.lex();
-            lexer.printTokens();
+            Lexer.init(tokenArray);
+            Lexer.run();
             //System.err.println("Lexer work well, now it is parser");
             // parse
             //System.err.println("Parser here");
@@ -75,11 +72,9 @@ public class Compiler {
                     function.buildDominanceGraph();
                     function.runMem2Reg();
                 }
-
             }
 
             visitor.getManager().outputLLVM(arg.outPath);
-
 
         } catch (Exception e) {
             e.printStackTrace();

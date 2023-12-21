@@ -1,7 +1,6 @@
 package frontend.syntaxChecker;
 
 import frontend.lexer.Token;
-import frontend.lexer.TokenType;
 
 import java.util.ArrayList;
 
@@ -25,7 +24,7 @@ public class Ast {
         private Token type;
 
         public Decl(Token type) {
-            assert type.tokenType == TokenType.INT || type.tokenType == TokenType.FLOAT ||  type.tokenType == TokenType.VOID;
+            assert type.type == Token.Type.INT || type.type == Token.Type.FLOAT ||  type.type == Token.Type.VOID;
             this.type = type;
         }
 
@@ -349,7 +348,7 @@ public class Ast {
        public Token type;
 
        public Btype(Token type) {
-           assert type.tokenType == TokenType.INT || type.tokenType == TokenType.FLOAT;
+           assert type.type == Token.Type.INT || type.type == Token.Type.FLOAT;
            this.type = type;
        }
 
@@ -440,7 +439,7 @@ public class Ast {
         public Token identifier;
 
         public Ident(Token token) {
-            assert token.tokenType == TokenType.IDENTIFIER;
+            assert token.type == Token.Type.IDENTIFIER;
             this.identifier = token;
         }
 
@@ -630,7 +629,7 @@ public class Ast {
         private Token addOp = null;
 
         public AddExpSuffix(MulExp mulExp, AddExpSuffix addExpSuffix, Token addOp) {
-            assert addOp.tokenType == TokenType.ADD || addOp.tokenType == TokenType.SUB;
+            assert addOp.type == Token.Type.ADD || addOp.type == Token.Type.SUB;
             this.mulExp = mulExp;
             this.addExpSuffix = addExpSuffix;
             this.addOp = addOp;
@@ -701,7 +700,7 @@ public class Ast {
         }
 
         public UnaryExp(Token unaryOp, UnaryExp unaryExp) {
-            assert unaryOp.tokenType == TokenType.NOT || unaryOp.tokenType == TokenType.ADD || unaryOp.tokenType == TokenType.SUB;
+            assert unaryOp.type == Token.Type.NOT || unaryOp.type == Token.Type.ADD || unaryOp.type == Token.Type.SUB;
             this.unaryOp = unaryOp;
             this.unaryExp = unaryExp;
         }
@@ -752,7 +751,7 @@ public class Ast {
         private Token mulOp = null;
 
         public MulExpSuffix(UnaryExp unaryExp, MulExpSuffix mulExpSuffix, Token mulOp) {
-            assert mulOp.tokenType == TokenType.MUL || mulOp.tokenType == TokenType.DIV || mulOp.tokenType == TokenType.MOD;
+            assert mulOp.type == Token.Type.MUL || mulOp.type == Token.Type.DIV || mulOp.type == Token.Type.MOD;
             this.mulExpSuffix = mulExpSuffix;
             this.unaryExp = unaryExp;
             this.mulOp = mulOp;

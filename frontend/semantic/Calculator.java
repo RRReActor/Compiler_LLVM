@@ -2,12 +2,10 @@ package frontend.semantic;
 
 import exception.SemanticError;
 import frontend.lexer.Token;
-import frontend.lexer.TokenType;
 import frontend.syntaxChecker.Ast;
 import mir.Constant;
 import mir.Value;
 
-import java.math.BigInteger;
 import java.util.ArrayList;
 
 /**
@@ -36,10 +34,10 @@ public class Calculator {
             if (ret instanceof Float || mulRet instanceof Float) {
                 float f1 = ret instanceof Integer ? (float) ((int) ret) : (float) ret;
                 float f2 = mulRet instanceof Integer ? (float) ((int) mulRet) : (float) mulRet;
-                switch (addExpSuffix.getAddOp().tokenType) {
+                switch (addExpSuffix.getAddOp().type) {
                     case ADD -> ret = f1 * f2;
                     case SUB -> ret = f1 / f2;
-                    default -> throw new SemanticError("Bad MulOp: "+addExpSuffix.getAddOp().tokenType.toString());
+                    default -> throw new SemanticError("Bad MulOp: "+addExpSuffix.getAddOp().type.toString());
                 }
             } else {
                 if(!(ret instanceof Integer || mulRet instanceof Integer)) {
@@ -47,10 +45,10 @@ public class Calculator {
                 }
                 int i1 = (int) ret;
                 int i2 = (int) mulRet;
-                switch (addExpSuffix.getAddOp().tokenType) {
+                switch (addExpSuffix.getAddOp().type) {
                     case ADD -> ret = i1 + i2;
                     case SUB -> ret = i1 - i2;
-                    default -> throw new SemanticError("Bad MulOp: "+addExpSuffix.getAddOp().tokenType.toString());
+                    default -> throw new SemanticError("Bad MulOp: "+addExpSuffix.getAddOp().type.toString());
                 }
             }
 
@@ -73,11 +71,11 @@ public class Calculator {
             if (ret instanceof Float || unaryRet instanceof Float) {
                 float f1 = ret instanceof Integer ? (float) ((int) ret) : (float) ret;
                 float f2 = unaryRet instanceof Integer ? (float) ((int) unaryRet) : (float) unaryRet;
-                switch (mulExpSuffix.getMulOp().tokenType) {
+                switch (mulExpSuffix.getMulOp().type) {
                     case MUL -> ret = f1 * f2;
                     case DIV -> ret = f1 / f2;
                     case MOD -> ret = f1 % f2;
-                    default -> throw new SemanticError("Bad MulOp: "+mulExpSuffix.getMulOp().tokenType.toString());
+                    default -> throw new SemanticError("Bad MulOp: "+mulExpSuffix.getMulOp().type.toString());
                 }
             } else {
                 if(!(ret instanceof Integer || unaryRet instanceof Integer)) {
@@ -85,11 +83,11 @@ public class Calculator {
                 }
                 int i1 = (int) ret;
                 int i2 = (int) unaryRet;
-                switch (mulExpSuffix.getMulOp().tokenType) {
+                switch (mulExpSuffix.getMulOp().type) {
                     case MUL -> ret = i1 * i2;
                     case DIV -> ret = i1 / i2;
                     case MOD -> ret = i1 % i2;
-                    default -> throw new SemanticError("Bad MulOp: "+mulExpSuffix.getMulOp().tokenType.toString());
+                    default -> throw new SemanticError("Bad MulOp: "+mulExpSuffix.getMulOp().type.toString());
                 }
             }
 
@@ -111,7 +109,7 @@ public class Calculator {
         } else if (unaryExp.isSubUnaryExp()) {
             Token unaryOp = unaryExp.getUnaryOp();
             Ast.UnaryExp subUnaryExp = unaryExp.getUnaryExp();
-            switch (unaryOp.tokenType) {
+            switch (unaryOp.type) {
                 case ADD -> ret = evalUnaryExp(subUnaryExp);
                 case SUB -> {
                     ret = evalUnaryExp(subUnaryExp);
@@ -133,7 +131,7 @@ public class Calculator {
                     }
                     throw new SemanticError("Wrong type of result");
                 }
-                default -> throw new SemanticError("Unsupported Unary Op"+unaryOp.tokenType);
+                default -> throw new SemanticError("Unsupported Unary Op"+unaryOp.type);
             }
         } else {
             throw new SemanticError("Bad unary exp");
@@ -201,17 +199,17 @@ public class Calculator {
     }
 
     private Object evalNumber(Token number) throws SemanticError {
-        if (number.tokenType == TokenType.DEC_FLOAT || number.tokenType == TokenType.HEX_FLOAT) {
+        if (number.type == Token.Type.DEC_FLOAT || number.type == Token.Type.HEX_FLOAT) {
             return Float.parseFloat(number.content);
-        } else if (number.tokenType == TokenType.DEC_INT || number.tokenType == TokenType.HEX_INT || number.tokenType == TokenType.OCT_INT) {
-            if (number.tokenType == TokenType.HEX_INT) {
+        } else if (number.type == Token.Type.DEC_INT || number.type == Token.Type.HEX_INT || number.type == Token.Type.OCT_INT) {
+            if (number.type == Token.Type.HEX_INT) {
                 if (number.content.contains("0x") || number.content.contains("0X")) {
                     return Integer.parseInt(number.content.substring(2).toUpperCase(), 16);
                 } else {
                     return Integer.parseInt(number.content.toUpperCase(), 16);
                 }
             }
-            if (number.tokenType == TokenType.OCT_INT) {
+            if (number.type == Token.Type.OCT_INT) {
                 return Integer.parseInt(number.content, 8);
             }
             return Integer.parseInt(number.content);

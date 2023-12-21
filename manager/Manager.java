@@ -242,4 +242,59 @@ public class Manager {
 
     //end region
 
+    public static class BufferReader {
+        private static BufferedInputStream src;
+        public static int line = 1;
+
+        public static void init(String src) {
+            try {
+                FileInputStream srcStream = new FileInputStream(src);
+                BufferReader.src = new BufferedInputStream(srcStream);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+
+        public static char peekChar() {
+            src.mark(1);
+            try {
+                char c = (char) src.read();
+                src.reset();
+                return c;
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public static void retract() {
+            try {
+                src.reset();
+            } catch (IOException e) {
+                throw new RuntimeException(e);
+            }
+        }
+
+        public static int getChar() {
+
+            src.mark(1);
+            try {
+                char ch = (char) src.read();
+                if (ch == '\n') {
+                    line++;
+                }
+                return ch;
+            } catch (IOException e) {
+                if (e instanceof EOFException)
+                    return (char) -1;
+                else throw new RuntimeException(e);
+            }
+        }
+
+        public static boolean reachEOF() throws IOException {
+            return (src.available() <= 0);
+        }
+
+
+    }
 }

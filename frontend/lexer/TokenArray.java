@@ -37,39 +37,39 @@ public class TokenArray {
     }
 
     public boolean isEnd() {
-        return index >= tokens.size() || tokens.get(index).tokenType == TokenType.EOF;
+        return index >= tokens.size() || tokens.get(index).type == Token.Type.EOF;
     }
 
 
-    public Token consumeToken(TokenType type) throws SyntaxError {
+    public Token consumeToken(Token.Type type) throws SyntaxError {
         if(isEnd()) {
             throw new SyntaxError("Unexpected EOF");
         }
         Token token = tokens.get(index);
-        if(token.tokenType == type) {
+        if(token.type == type) {
             if(DEBUG_MODE) {
-                System.err.println("consume: "+ token.tokenType.toString());
+                System.err.println("consume: "+ token.type.toString());
             }
             index ++;
             return token;
         }
-        throw new SyntaxError("Expected " + type + " but got " + token.tokenType.toString());
+        throw new SyntaxError("Expected " + type + " but got " + token.type.toString());
     }
 
-    public boolean checkAndSkip(TokenType type) {
+    public boolean checkAndSkip(Token.Type type) {
         Token token = tokens.get(index);
-        if(token.tokenType == type) {
+        if(token.type == type) {
             index ++;
             return true;
         }
         return false;
     }
 
-    public boolean checkAndSkip(TokenType... types) {
+    public boolean checkAndSkip(Token.Type... types) {
         Token token = tokens.get(index);
-        for (TokenType type:
+        for (Token.Type type:
              types) {
-            if(token.tokenType == type) {
+            if(token.type == type) {
                 index ++;
                 return true;
             }
@@ -77,13 +77,13 @@ public class TokenArray {
         return false;
     }
 
-    public Token consumeToken(TokenType... types) throws SyntaxError {
+    public Token consumeToken(Token.Type... types) throws SyntaxError {
         if(isEnd()) {
             throw new SyntaxError("Unexpected EOF");
         }
         Token token = tokens.get(index);
-        for (TokenType type : types) {
-            if (token.tokenType == type) {
+        for (Token.Type type : types) {
+            if (token.type == type) {
                 if (DEBUG_MODE) {
                     System.err.println("consume: " + type.toString());
                 }
@@ -94,26 +94,26 @@ public class TokenArray {
         for(int i = 0;i < index;i ++) {
             System.err.println(tokens.get(i).content);
         }
-        throw new SyntaxError("Expected " + Arrays.toString(types) + " but got " + token.tokenType.toString());
+        throw new SyntaxError("Expected " + Arrays.toString(types) + " but got " + token.type.toString());
     }
 
-    public boolean check(TokenType... types) {
+    public boolean check(Token.Type... types) {
         Token token = tokens.get(index);
-        for (TokenType type : types) {
-            if (token.tokenType == type) {
+        for (Token.Type type : types) {
+            if (token.type == type) {
                 return true;
             }
         }
         return false;
     }
 
-    public boolean check(int count, TokenType... types) {
+    public boolean check(int count, Token.Type... types) {
         if (index + count >= tokens.size()) {
             return false;
         }
         Token token = tokens.get(index + count);
-        for (TokenType type : types) {
-            if (token.tokenType == type) {
+        for (Token.Type type : types) {
+            if (token.type == type) {
                 return true;
             }
         }

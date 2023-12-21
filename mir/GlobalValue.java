@@ -1,7 +1,6 @@
 package mir;
 
 import frontend.lexer.Token;
-import frontend.lexer.TokenType;
 import frontend.semantic.InitValue;
 import frontend.syntaxChecker.Ast;
 
@@ -34,7 +33,7 @@ public class GlobalValue extends Constant {
     private GlobalValue(Type type) {
         //Type must be pointer，存的是全局变量地址
         super(new Type.PointerType(type));
-        ident = new Ast.Ident(new Token(TokenType.IDENTIFIER, "undef_" + undefTable.size()));
+        ident = new Ast.Ident(new Token(Token.Type.IDENTIFIER, "undef_" + undefTable.size()));
         if(type.isInt32Ty()) {
             initValue = new InitValue.ValueInit(new ConstantInt(0), type);
         } else if(type.isFloatTy()) {
