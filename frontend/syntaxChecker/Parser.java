@@ -3,15 +3,22 @@ package frontend.syntaxChecker;
 import frontend.lexer.Token;
 import frontend.lexer.TokenArray;
 import exception.SyntaxError;
+import manager.Manager;
 
 
 import java.util.ArrayList;
+import java.util.HashMap;
 
 /**
  * 递归下降
  */
 public class Parser {
     private final TokenArray tokenArray;
+    private Manager manager = null;
+
+    public void setManager(Manager manager) {
+        this.manager = manager;
+    }
 
     public Parser(TokenArray tokenArray) {
         this.tokenArray = tokenArray;
@@ -363,7 +370,9 @@ public class Parser {
 
     private Ast.Ident parseIdent() throws SyntaxError {
         Token ident = tokenArray.consumeToken(Token.Type.IDENTIFIER);
-        return new Ast.Ident(ident);
+        Ast.Ident ret = new Ast.Ident(ident);
+        manager.astRecorder.put(ret, ident.line);
+        return ret;
     }
 
     private Ast.FuncFParam parseFuncFParam() throws SyntaxError {

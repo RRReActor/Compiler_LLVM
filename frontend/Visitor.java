@@ -1,5 +1,6 @@
 package frontend;
 
+import exception.NumberedError;
 import exception.SemanticError;
 import frontend.lexer.Token;
 import frontend.semantic.Calculator;
@@ -87,7 +88,11 @@ public class Visitor {
         //判断定义类型
         Ast.Ident ident = constDef.getIdent();
         if (currentSymTable.hasSymbol(ident, false)) {
-            throw new SemanticError("Duplicated variable define" + ident.identifier.content);
+            //
+            manager.addNumberedError(new NumberedError(manager.astRecorder.get(ident), 'b'));
+
+            System.err.println("Duplicated variable define" + ident.identifier.content);
+            //throw new SemanticError();
         }
         Type defType = switch (btype.type.type) {
             case INT -> mir.Type.BasicType.I32_TYPE;
@@ -726,12 +731,12 @@ public class Visitor {
         assert pointer.getType() instanceof Type.PointerType;
         Type contentTp = ((Type.PointerType) pointer.getType()).getInnerType();
         Value newOffset = new Constant.ConstantInt(0);
-        for (Value offset:
-             offsets) {
+        for (Value offset :
+                offsets) {
             if (contentTp == eleTp) {
                 if (newOffset instanceof Constant && offset instanceof Constant) {
-                    newOffset =  new Constant.ConstantInt(((int) ((Constant) newOffset).getConstValue()+ (int) ((Constant) offset).getConstValue()));
-                }  else {
+                    newOffset = new Constant.ConstantInt(((int) ((Constant) newOffset).getConstValue() + (int) ((Constant) offset).getConstValue()));
+                } else {
                     newOffset = new Instruction.BinaryOperation.Add(currentBB, mir.Type.BasicType.I32_TYPE, newOffset, offset);
                 }
             } else {
@@ -751,7 +756,7 @@ public class Visitor {
                         value = new Instruction.BinaryOperation.Mul(currentBB, mir.Type.BasicType.I32_TYPE, offset, new Constant.ConstantInt(((Type.ArrayType) contentTp).getFlattenSize()));
                 }
                 if (value instanceof Constant && newOffset instanceof Constant) {
-                    newOffset = new Constant.ConstantInt(((int) ((Constant) newOffset).getConstValue()+ (int) ((Constant) value).getConstValue()));
+                    newOffset = new Constant.ConstantInt(((int) ((Constant) newOffset).getConstValue() + (int) ((Constant) value).getConstValue()));
                 } else {
                     newOffset = new Instruction.BinaryOperation.Add(currentBB, mir.Type.BasicType.I32_TYPE, newOffset, value);
                 }
@@ -797,12 +802,21 @@ public class Visitor {
         }
     }
 
+    private void setDuplicatedDefine(Ast.Ident ident) {
+        System.err.println("Duplicated variable define" + ident.identifier.content);
+        manager.addNumberedError(new NumberedError(manager.astRecorder.get(ident), 'b'));
+    }
+
+    private void checkDuplicatedDefine(Ast.Ident ident) {
+        if (currentSymTable.hasSymbol(ident, false)) {
+            setDuplicatedDefine(ident);
+        }
+    }
+
     //基本仿照visitConstDef
     private void visitVarDef(Ast.VarDef varDef, Ast.Btype btype) throws SemanticError {
         Ast.Ident ident = varDef.getIdent();
-        if (currentSymTable.hasSymbol(ident, false)) {
-            throw new SemanticError("Duplicated variable define" + ident.identifier.content);
-        }
+        checkDuplicatedDefine(ident);
         Type defType = switch (btype.type.type) {
             case INT -> mir.Type.BasicType.I32_TYPE;
             case FLOAT -> mir.Type.BasicType.F32_TYPE;
@@ -859,9 +873,15 @@ public class Visitor {
             default -> throw new SemanticError("Bad FuncType");
         };
         Ast.Ident ident = funcDef.getIdent();
+        // check
+        checkDuplicatedDefine(ident);
         if (manager.getFunctions().containsKey(ident.identifier.content)) {
-            throw new SemanticError("Duplicated Defined Function " + ident.identifier.content);
+            setDuplicatedDefine(ident);
         }
+        if(!currentSymTable.hasSymbol(ident, false)) {
+            currentSymTable.addSymbol(new Symbol(ident, funcType, null, false, null));
+        }
+
         isGlobal = false;
         currentSymTable = new SymTable(currentSymTable);
 
@@ -888,7 +908,8 @@ public class Visitor {
             argument.idx = i;
             new Instruction.Store(currentBB, argument, ptr);
 
-
+            // check then add
+            checkDuplicatedDefine(argIdent);
             currentSymTable.addSymbol(new Symbol(argIdent, argType, null, false, ptr));
         }
 
@@ -948,9 +969,9 @@ public class Visitor {
             visitBlockStmt((Ast.BlockStmt) stmt);
         } else if (stmt instanceof Ast.IfStmt) {
             visitIfStmt((Ast.IfStmt) stmt);
-        } else if (stmt instanceof  Ast.ForStmt){
+        } else if (stmt instanceof Ast.ForStmt) {
             visitForStmt((Ast.ForStmt) stmt);
-        }else if (stmt instanceof Ast.WhileStmt) {
+        } else if (stmt instanceof Ast.WhileStmt) {
             visitWhileStmt((Ast.WhileStmt) stmt);
         } else if (stmt instanceof Ast.IfElStmt) {
             visitIfElStmt((Ast.IfElStmt) stmt);
@@ -1029,7 +1050,6 @@ public class Visitor {
                 thenBlock.isDeleted = true;
             }
         }
-
         conds.pop();
         currentBB = followBlock;
     }
@@ -1295,7 +1315,7 @@ public class Visitor {
                 case CONTINUE -> jump.backFill(condBB);
             }
         }
-        if(stmt.getCond() != null) {
+        if (stmt.getCond() != null) {
             conds.pop();
         }
         recorders.pop();

@@ -1,4 +1,11 @@
+void foo() {
+
+}
+
+int foo;
+
 int main() {
+    int a;
     int a;
     int b[2] = {1, 2};
     int c[2][2] = {{1, 2}, {3, 4}};
@@ -10,7 +17,7 @@ int main() {
     1 + 1;
     (1 + 1);
     printf("21371295\n");
-    printf("%d\n", d);
+    printf("%f\a", d);
     printf("%d %d\n",b[0], b[1]);
     int i = 0;
     for(i = 0;;){

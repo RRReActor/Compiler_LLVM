@@ -24,18 +24,21 @@ public class Compiler {
             //System.err.println("Lexer here");
             Manager.BufferReader.init(arg.srcFileName);
             TokenArray tokenArray = new TokenArray();
+            Visitor visitor = new Visitor();
+            Lexer.setManager(visitor.getManager());
             Lexer.init(tokenArray);
             Lexer.run();
             //System.err.println("Lexer work well, now it is parser");
             // parse
             //System.err.println("Parser here");
             Parser parser = new Parser(tokenArray);
-            Ast ast = parser.parseAst();
             //System.err.println("Parser work well, now it is visitor");
 
             // visit
             //System.err.println("Visitor here");
-            Visitor visitor = new Visitor();
+
+            parser.setManager(visitor.getManager());
+            Ast ast = parser.parseAst();
             visitor.visitAst(ast);
             //visitor.getManager().outputLLVM(arg.outPath);
             //System.err.println("Visitor work well, now it is midend");
@@ -75,6 +78,7 @@ public class Compiler {
             }
 
             visitor.getManager().outputLLVM(arg.outPath);
+            visitor.getManager().outputError();
 
         } catch (Exception e) {
             e.printStackTrace();

@@ -17,6 +17,10 @@ public class Ast {
 
     }
 
+    public interface Record {
+
+    }
+
     /**
      * Decl → ConstDecl | VarDecl | FuncDef
      */
@@ -435,7 +439,7 @@ public class Ast {
         }
     }
 
-    public static class Ident {
+    public static class Ident implements Record {
         public Token identifier;
 
         public Ident(Token token) {

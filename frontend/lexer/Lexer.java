@@ -1,5 +1,6 @@
 package frontend.lexer;
 
+import exception.NumberedError;
 import exception.SyntaxError;
 import manager.Manager;
 
@@ -7,6 +8,7 @@ import java.io.IOException;
 
 
 public class Lexer {
+    private static Manager manager;
     private static char ch;
     private static StringBuilder token;
     private static TokenArray tokenArray;
@@ -15,6 +17,10 @@ public class Lexer {
         Lexer.tokenArray = tokenArray;
         // 首次读进
         moveForward();
+    }
+
+    public static void setManager(Manager manager) {
+        Lexer.manager = manager;
     }
 
 
@@ -154,7 +160,15 @@ public class Lexer {
                     getChar();
                 }
                 catToken();
+                // 检查匹配
+
                 retSymbol = new Token(Token.Type.STR, token.toString());
+                if(!Token.Type.STR.getPattern().matcher(token.toString()).matches()) {
+                    //
+                    NumberedError err = new NumberedError(retSymbol.line, 'a');
+//                    System.err.println(err);
+                    manager.addNumberedError(err);
+                }
                 break;
 
             case ';':

@@ -1,7 +1,9 @@
 package manager;
 
+import exception.NumberedError;
 import frontend.semantic.SymTable;
 import frontend.semantic.Symbol;
+import frontend.syntaxChecker.Ast;
 import mir.Function;
 import mir.GlobalValue;
 import mir.Module;
@@ -9,16 +11,16 @@ import mir.Type;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 
 public class Manager {
 
     private final ArrayList<String> outputListWithoutStr = new ArrayList<>();
     private final ArrayList<String> outputListOfStr = new ArrayList<>();
+    public final HashMap<Ast.Record, Integer> astRecorder = new HashMap<>();
+    private final ArrayList<NumberedError> numberedErrors = new ArrayList<>();
+    private final ArrayList<String> errorOutputList = new ArrayList<>();
     private final ArrayList<String> outputList = new ArrayList<>();
-
     private final Module module;
 
     public Manager(SymTable globalSymTable, ArrayList<String> globalStrings, ArrayList<GlobalValue> globalValues) {
@@ -66,6 +68,19 @@ public class Manager {
         }};
     }
 
+    public void addNumberedError(NumberedError error) {
+        numberedErrors.add(error);
+    }
+
+    public void outputError() throws FileNotFoundException {
+        OutputStream out = new FileOutputStream("error.txt");
+        numberedErrors.sort(Comparator.comparingInt(NumberedError::getLine));
+        for (NumberedError numberedError : numberedErrors) {
+            errorOutputList.add(numberedError.toString());
+        }
+        streamOutput(out,errorOutputList);
+
+    }
 
     public void outputLLVM(String name) throws FileNotFoundException {
         OutputStream out = new FileOutputStream(name);
@@ -90,6 +105,9 @@ public class Manager {
 
         for (Map.Entry<String, Symbol> globalSymbolEntry :
                 globalSymTable.getSymbolMap().entrySet()) {
+            if(globalSymbolEntry.getValue().getAllocInst() == null) {
+                continue;
+            }
             outputListWithoutStr.add(String.format("@%s = global %s", globalSymbolEntry.getKey(), globalSymbolEntry.getValue().getInitValue().toString()));
         }
 
