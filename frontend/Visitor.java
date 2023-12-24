@@ -2,6 +2,7 @@ package frontend;
 
 import exception.NumberedError;
 import exception.SemanticError;
+import exception.SyntaxError;
 import frontend.lexer.Token;
 import frontend.semantic.Calculator;
 import frontend.semantic.InitValue;
@@ -37,7 +38,6 @@ public class Visitor {
 
     private final Stack<Ast.Cond> conds = new Stack<>();
 
-
     private boolean isInLoop() {
         return !recorders.isEmpty();
     }
@@ -64,15 +64,17 @@ public class Visitor {
         visitDecl((Ast.Decl) compUnit);
     }
 
-    private void visitDecl(Ast.Decl decl) throws SemanticError {
-        if (decl instanceof Ast.ConstDecl) {
-            visitConstDecl((Ast.ConstDecl) decl);
-        } else if (decl instanceof Ast.VarDecl) {
-            visitVarDecl((Ast.VarDecl) decl);
-        } else if (decl instanceof Ast.FuncDef) {
-            visitFuncDef((Ast.FuncDef) decl);
-        } else {
-            throw new AssertionError("Bad compile unit!");
+    private void visitDecl(Ast.Decl decl){
+        try {
+            if (decl instanceof Ast.ConstDecl) {
+                visitConstDecl((Ast.ConstDecl) decl);
+            } else if (decl instanceof Ast.VarDecl) {
+                visitVarDecl((Ast.VarDecl) decl);
+            } else if (decl instanceof Ast.FuncDef) {
+                visitFuncDef((Ast.FuncDef) decl);
+            }
+        }catch (SemanticError e){
+            System.err.println(e.getMessage());
         }
     }
 
@@ -612,7 +614,8 @@ public class Visitor {
         if (function == null) {
             function = Manager.ExternFunc.externFunctions.get(ident.identifier.content);
             if (function == null) {
-                throw new SemanticError("Undefined Function: " + ident.identifier.content);
+                // System.err.println("Undefined Function: " + ident.identifier.content);
+                setUndef(ident);
             } else {
                 manager.addFunction(function);
             }
@@ -628,9 +631,19 @@ public class Visitor {
             return new Instruction.Call(currentBB, function, rParams, globalStr.size());
         }
 
+        // check if the number of parameters is correct
+        if (function.getArgumentsTP().size() != funcRParams.getParams().size()) {
+            manager.addNumberedError(new NumberedError(manager.astRecorder.get(ident), 'd'));
+            throw new SemanticError("Wrong number of parameters: " + ident.identifier.content);
+        }
 
         ArrayList<Type> fParams = function.getArgumentsTP();
         for (int i = 0; i < funcRParams.getParams().size(); i++) {
+            // check if the type of parameter is correct
+            if (!fParams.get(i).equals(visitExp(funcRParams.getParams().get(i)).getType())) {
+                manager.addNumberedError(new NumberedError(manager.astRecorder.get(ident), 'e'));
+                throw new SemanticError("Wrong type of parameters: " + ident.identifier.content);
+            }
             if (fParams.get(i) instanceof Type.BasicType)
                 rParams.add(castType(visitExp(funcRParams.getParams().get(i)), (Type.BasicType) fParams.get(i)));
             else
@@ -653,11 +666,16 @@ public class Visitor {
         }
     }
 
+    private void setUndef(Ast.Ident ident) throws SemanticError {
+        manager.addNumberedError(new NumberedError(ident.identifier.line, 'c'));
+        throw new SemanticError("Undefined Variable: " + ident.identifier.content);
+    }
+
     private Value visitLval(Ast.Lval lval, boolean getAddr) throws SemanticError {
         Ast.Ident ident = lval.getIdent();
         Symbol symbol = currentSymTable.getSymbol(ident, true);
         if (symbol == null) {
-            throw new SemanticError("Undefined Symbol: " + ident.identifier.content);
+            setUndef(ident);
         }
         //如果是一个int或float类型的可以获得值的量
         if (canGetConstantVal(symbol) && (symbol.getType() instanceof Type.BasicType) && !getAddr) {
@@ -705,7 +723,13 @@ public class Visitor {
             pointer = new Instruction.GetElementPtr(currentBB, pointer, contentType, flattenOffsets);
         }
 
+
         if (getAddr) {
+            // 如果为常量或 pointer 为指向数组的指针 ，不能取地址
+            if(symbol.isConstant() || ((Type.PointerType) pointer.getType()).getInnerType() instanceof Type.ArrayType ) {
+                manager.addNumberedError(new NumberedError(manager.astRecorder.get(ident), 'h'));
+                throw new SemanticError("Can not get address of a constant variable: " + ident.identifier.content);
+            }
             return pointer;
         }
 
@@ -802,12 +826,12 @@ public class Visitor {
         }
     }
 
-    private void setDuplicatedDefine(Ast.Ident ident) {
-        System.err.println("Duplicated variable define" + ident.identifier.content);
+    private void setDuplicatedDefine(Ast.Ident ident) throws SemanticError {
         manager.addNumberedError(new NumberedError(manager.astRecorder.get(ident), 'b'));
+        throw new SemanticError("Duplicated Define: " + ident.identifier.content);
     }
 
-    private void checkDuplicatedDefine(Ast.Ident ident) {
+    private void checkDuplicatedDefine(Ast.Ident ident) throws SemanticError {
         if (currentSymTable.hasSymbol(ident, false)) {
             setDuplicatedDefine(ident);
         }
@@ -865,8 +889,8 @@ public class Visitor {
     }
 
     private void visitFuncDef(Ast.FuncDef funcDef) throws SemanticError {
-        Token funcToken = funcDef.getType();
-        Type funcType = switch (funcToken.type) {
+        Token funcTypeToken = funcDef.getType();
+        Type funcType = switch (funcTypeToken.type) {
             case INT -> mir.Type.BasicType.I32_TYPE;
             case FLOAT -> mir.Type.BasicType.F32_TYPE;
             case VOID -> mir.Type.VoidType.VOID_TYPE;
@@ -878,7 +902,7 @@ public class Visitor {
         if (manager.getFunctions().containsKey(ident.identifier.content)) {
             setDuplicatedDefine(ident);
         }
-        if(!currentSymTable.hasSymbol(ident, false)) {
+        if (!currentSymTable.hasSymbol(ident, false)) {
             currentSymTable.addSymbol(new Symbol(ident, funcType, null, false, null));
         }
 
@@ -919,14 +943,21 @@ public class Visitor {
         visitBlock(funcDef.getBlock(), true);
 
         if (!currentBB.isTerminated()) {
-            switch (funcToken.type) {
+            // absence of returnStmt
+
+
+            switch (funcTypeToken.type) {
                 case VOID -> new Instruction.Return(currentBB);
                 case FLOAT -> new Instruction.Return(currentBB, new Constant.ConstantFloat(0));
                 case INT -> new Instruction.Return(currentBB, new Constant.ConstantInt(0));
                 default -> throw new SemanticError("Bad FuncType");
             }
-        }
+            if(!funcType.isVoidTy()) {
+                manager.addNumberedError(new NumberedError(manager.funcBoundaryRecorder.get(ident), 'g'));
+                throw new SemanticError("Absence of ReturnStmt");
+            }
 
+        }
 
         currentFunc = null;
         currentEntry = null;
@@ -960,31 +991,33 @@ public class Visitor {
         }
     }
 
-    private void visitStmt(Ast.Stmt stmt) throws SemanticError {
-        if (stmt instanceof Ast.AssignStmt) {
-            visitAssignStmt((Ast.AssignStmt) stmt);
-        } else if (stmt instanceof Ast.ExpStmt) {
-            visitExpStmt((Ast.ExpStmt) stmt);
-        } else if (stmt instanceof Ast.BlockStmt) {
-            visitBlockStmt((Ast.BlockStmt) stmt);
-        } else if (stmt instanceof Ast.IfStmt) {
-            visitIfStmt((Ast.IfStmt) stmt);
-        } else if (stmt instanceof Ast.ForStmt) {
-            visitForStmt((Ast.ForStmt) stmt);
-        } else if (stmt instanceof Ast.WhileStmt) {
-            visitWhileStmt((Ast.WhileStmt) stmt);
-        } else if (stmt instanceof Ast.IfElStmt) {
-            visitIfElStmt((Ast.IfElStmt) stmt);
-        } else if (stmt instanceof Ast.VoidStmt) {
-            visitVoidStmt();
-        } else if (stmt instanceof Ast.BreakStmt) {
-            visitBreakStmt();
-        } else if (stmt instanceof Ast.ContinueStmt) {
-            visitContinueStmt();
-        } else if (stmt instanceof Ast.ReturnStmt) {
-            visitReturnStmt((Ast.ReturnStmt) stmt);
-        } else {
-            throw new SemanticError("Bad Stmt");
+    private void visitStmt(Ast.Stmt stmt) {
+        try {
+            if (stmt instanceof Ast.AssignStmt) {
+                visitAssignStmt((Ast.AssignStmt) stmt);
+            } else if (stmt instanceof Ast.ExpStmt) {
+                visitExpStmt((Ast.ExpStmt) stmt);
+            } else if (stmt instanceof Ast.BlockStmt) {
+                visitBlockStmt((Ast.BlockStmt) stmt);
+            } else if (stmt instanceof Ast.IfStmt) {
+                visitIfStmt((Ast.IfStmt) stmt);
+            } else if (stmt instanceof Ast.ForStmt) {
+                visitForStmt((Ast.ForStmt) stmt);
+            } else if (stmt instanceof Ast.WhileStmt) {
+                visitWhileStmt((Ast.WhileStmt) stmt);
+            } else if (stmt instanceof Ast.IfElStmt) {
+                visitIfElStmt((Ast.IfElStmt) stmt);
+            } else if (stmt instanceof Ast.VoidStmt) {
+                visitVoidStmt();
+            } else if (stmt instanceof Ast.BreakStmt) {
+                visitBreakStmt();
+            } else if (stmt instanceof Ast.ContinueStmt) {
+                visitContinueStmt();
+            } else if (stmt instanceof Ast.ReturnStmt) {
+                visitReturnStmt((Ast.ReturnStmt) stmt);
+            }
+        } catch (SemanticError error) {
+            System.err.println(error.getMessage());
         }
     }
 
@@ -993,11 +1026,8 @@ public class Visitor {
     }
 
     private void visitAssignStmt(Ast.AssignStmt assignStmt) throws SemanticError {
-        Symbol symbol = currentSymTable.getSymbol(assignStmt.getLval().getIdent(), true);
-        if (symbol.isConstant()) {
-            throw new SemanticError("Constant Value cannot be assigned");
-        }
-
+        Ast.Ident ident = assignStmt.getLval().getIdent();
+        Symbol symbol = currentSymTable.getSymbol(ident, true);
         Value addr = visitLval(assignStmt.getLval(), true);
         assert addr.getType() instanceof Type.PointerType;
         Type eleType = ((Type.PointerType) addr.getType()).getInnerType();
@@ -1006,11 +1036,10 @@ public class Visitor {
         Value val = visitExp(assignStmt.getExp());
         if (val instanceof Constant && !isInCond() && !isInLoop() && !globalSymTable.hasSymbol(assignStmt.getLval().getIdent(), false)) {
             symbol.setCurValue(new InitValue.ValueInit(castConstantType((Constant) val, (Type.BasicType) eleType), eleType));
-            new Instruction.Store(currentBB, castType(val, (Type.BasicType) eleType), addr);
         } else {
             symbol.isChanged = true;
-            new Instruction.Store(currentBB, castType(val, (Type.BasicType) eleType), addr);
         }
+        new Instruction.Store(currentBB, castType(val, (Type.BasicType) eleType), addr);
     }
 
 
@@ -1369,6 +1398,14 @@ public class Visitor {
     }
 
     private void visitReturnStmt(Ast.ReturnStmt returnStmt) throws SemanticError {
+        // check if this function do need returnStmt
+        if (currentFunc.getRetType().isVoidTy()) {
+            if (returnStmt.getExp() != null) {
+                manager.addNumberedError(new NumberedError(manager.astRecorder.get(returnStmt), 'f'));
+                throw new SemanticError("Void function should not return a value");
+            }
+        }
+
         Ast.AddExp exp = returnStmt.getExp();
         if (exp == null) {
             new Instruction.Return(currentBB);

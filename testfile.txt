@@ -1,4 +1,12 @@
-void foo() {
+int foo(int x,int y) {
+    return x + y;
+}
+
+void foo2(){
+    return 2;
+}
+
+int foo3() {
 
 }
 
@@ -7,11 +15,16 @@ int foo;
 int main() {
     int a;
     int a;
+    x = 1;
     int b[2] = {1, 2};
     int c[2][2] = {{1, 2}, {3, 4}};
     const int d = 0, e = 1;
+    c = 1;
+    d = 3;
     const int f[2] = {1, 2};
     const int g[2][2] = {{1, 2}, {3, 4}};
+    foo(d);
+    foo(b,d);
     b[0] = 1;
     c[0][0] = 1;
     1 + 1;

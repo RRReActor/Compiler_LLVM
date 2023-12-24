@@ -1,4 +1,5 @@
 package frontend.lexer;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 
@@ -42,15 +43,15 @@ public class TokenArray {
 
 
     public Token consumeToken(Token.Type type) throws SyntaxError {
-        if(isEnd()) {
+        if (isEnd()) {
             throw new SyntaxError("Unexpected EOF");
         }
         Token token = tokens.get(index);
-        if(token.type == type) {
-            if(DEBUG_MODE) {
-                System.err.println("consume: "+ token.type.toString());
+        if (token.type == type) {
+            if (DEBUG_MODE) {
+                System.err.println("consume: " + token.type.toString());
             }
-            index ++;
+            index++;
             return token;
         }
         throw new SyntaxError("Expected " + type + " but got " + token.type.toString());
@@ -58,8 +59,8 @@ public class TokenArray {
 
     public boolean checkAndSkip(Token.Type type) {
         Token token = tokens.get(index);
-        if(token.type == type) {
-            index ++;
+        if (token.type == type) {
+            index++;
             return true;
         }
         return false;
@@ -67,10 +68,10 @@ public class TokenArray {
 
     public boolean checkAndSkip(Token.Type... types) {
         Token token = tokens.get(index);
-        for (Token.Type type:
-             types) {
-            if(token.type == type) {
-                index ++;
+        for (Token.Type type :
+                types) {
+            if (token.type == type) {
+                index++;
                 return true;
             }
         }
@@ -78,7 +79,7 @@ public class TokenArray {
     }
 
     public Token consumeToken(Token.Type... types) throws SyntaxError {
-        if(isEnd()) {
+        if (isEnd()) {
             throw new SyntaxError("Unexpected EOF");
         }
         Token token = tokens.get(index);
@@ -91,7 +92,7 @@ public class TokenArray {
                 return token;
             }
         }
-        for(int i = 0;i < index;i ++) {
+        for (int i = 0; i < index; i++) {
             System.err.println(tokens.get(i).content);
         }
         throw new SyntaxError("Expected " + Arrays.toString(types) + " but got " + token.type.toString());

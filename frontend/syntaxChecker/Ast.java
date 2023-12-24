@@ -302,7 +302,7 @@ public class Ast {
         public ContinueStmt() {}
     }
 
-    public static class ReturnStmt extends Stmt {
+    public static class ReturnStmt extends Stmt implements Record {
 
         private AddExp exp;
 
@@ -734,6 +734,7 @@ public class Ast {
         }
 
         public boolean isFunctionCall() {
+
             return ident != null;
         }
 

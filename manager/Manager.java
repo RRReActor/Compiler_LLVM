@@ -17,7 +17,10 @@ public class Manager {
 
     private final ArrayList<String> outputListWithoutStr = new ArrayList<>();
     private final ArrayList<String> outputListOfStr = new ArrayList<>();
+    // 记录 语法树节点的 位置信息
     public final HashMap<Ast.Record, Integer> astRecorder = new HashMap<>();
+    // 记录 函数的边界位置信息
+    public final HashMap<Ast.Record, Integer> funcBoundaryRecorder = new HashMap<>();
     private final ArrayList<NumberedError> numberedErrors = new ArrayList<>();
     private final ArrayList<String> errorOutputList = new ArrayList<>();
     private final ArrayList<String> outputList = new ArrayList<>();
