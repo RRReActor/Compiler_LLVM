@@ -17,6 +17,8 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Stack;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class Visitor {
     private SymTable globalSymTable = new SymTable();
@@ -74,7 +76,7 @@ public class Visitor {
                 visitFuncDef((Ast.FuncDef) decl);
             }
         }catch (SemanticError e){
-            System.err.println(e.getMessage());
+//            System.err.println(e.getMessage());
         }
     }
 
@@ -93,7 +95,7 @@ public class Visitor {
             //
             manager.addNumberedError(new NumberedError(manager.astRecorder.get(ident), 'b'));
 
-            System.err.println("Duplicated variable define" + ident.identifier.content);
+            //System.err.println("Duplicated variable define" + ident.identifier.content);
             //throw new SemanticError();
         }
         Type defType = switch (btype.type.type) {
@@ -628,10 +630,24 @@ public class Visitor {
                 rParams.add(visitExp(funcRParams.getParams().get(i)));
             }
             globalStr.add(str.content);
+            // 识别str 中 %d 的个数
+            Pattern pattern = Pattern.compile("%d");
+            Matcher matcher = pattern.matcher(str.content);
+
+            int count = 0;
+            while (matcher.find()) {
+                count++;
+            }
+            // 检查个数
+            if(count != funcRParams.getParams().size()) {
+                manager.addNumberedError(new NumberedError(manager.astRecorder.get(ident), 'l'));
+                throw new SemanticError("Wrong number of parameters: " + ident.identifier.content);
+            }
+
             return new Instruction.Call(currentBB, function, rParams, globalStr.size());
         }
 
-        // check if the number of parameters is correct
+
         if (function.getArgumentsTP().size() != funcRParams.getParams().size()) {
             manager.addNumberedError(new NumberedError(manager.astRecorder.get(ident), 'd'));
             throw new SemanticError("Wrong number of parameters: " + ident.identifier.content);
@@ -1010,14 +1026,14 @@ public class Visitor {
             } else if (stmt instanceof Ast.VoidStmt) {
                 visitVoidStmt();
             } else if (stmt instanceof Ast.BreakStmt) {
-                visitBreakStmt();
+                visitBreakStmt(stmt);
             } else if (stmt instanceof Ast.ContinueStmt) {
-                visitContinueStmt();
+                visitContinueStmt(stmt);
             } else if (stmt instanceof Ast.ReturnStmt) {
                 visitReturnStmt((Ast.ReturnStmt) stmt);
             }
         } catch (SemanticError error) {
-            System.err.println(error.getMessage());
+//            System.err.println(error.getMessage());
         }
     }
 
@@ -1383,15 +1399,17 @@ public class Visitor {
         currentBB = followBlock;
     }
 
-    private void visitBreakStmt() throws SemanticError {
+    private void visitBreakStmt(Ast.Stmt stmt) throws SemanticError {
         if (recorders.isEmpty()) {
+            manager.addNumberedError(new NumberedError(manager.astRecorder.get(stmt), 'm'));
             throw new SemanticError("Break statement need a loop");
         }
         recorders.peek().record(Recorder.Mark.BREAK, new Instruction.Jump(currentBB, Recorder.Mark.BREAK));
     }
 
-    private void visitContinueStmt() throws SemanticError {
+    private void visitContinueStmt(Ast.Stmt stmt) throws SemanticError {
         if (recorders.isEmpty()) {
+            manager.addNumberedError(new NumberedError(manager.astRecorder.get(stmt), 'm'));
             throw new SemanticError("Continue statement need a loop");
         }
         recorders.peek().record(Recorder.Mark.CONTINUE, new Instruction.Jump(currentBB, Recorder.Mark.CONTINUE));

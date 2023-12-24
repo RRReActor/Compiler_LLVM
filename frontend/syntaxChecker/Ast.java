@@ -145,7 +145,7 @@ public class Ast {
      * Stmt → LVal ‘=’ Exp ‘;’ | [Exp] ‘;’ | Block | ‘if’ ‘(’ Cond ‘)’ Stmt [ ‘else’ Stmt ] |
      * ‘while’ ‘(’ Cond ‘)’ Stmt | ‘break’ ‘;’ | ‘continue’ ‘;’ | ‘return’ [Exp] ‘;’
      */
-    public static class Stmt  implements BlockItem {}
+    public static class Stmt  implements BlockItem, Record {}
 
     public static class AssignStmt extends Stmt {
         private Lval lval;

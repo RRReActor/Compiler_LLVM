@@ -3,11 +3,18 @@ package frontend.lexer;
 import java.util.ArrayList;
 import java.util.Arrays;
 
+import exception.NumberedError;
 import exception.SyntaxError;
+import manager.Manager;
 
 public class TokenArray {
+    private Manager manager;
     public ArrayList<Token> tokens = new ArrayList<>();
     private static boolean DEBUG_MODE = false;
+
+    public void setManager(Manager manager) {
+        this.manager = manager;
+    }
 
     public int index = 0;
 
@@ -18,6 +25,10 @@ public class TokenArray {
 
     public Token getToken() {
         return tokens.get(index);
+    }
+
+    public Token getLastToken() {
+        return tokens.get(index - 1);
     }
 
     public void setToken(int index, Token newElement) {
@@ -54,7 +65,16 @@ public class TokenArray {
             index++;
             return token;
         }
+        // 处理 右括号缺失
+        if (type.equals(Token.Type.R_PAREN)) {
+            manager.addNumberedError(new NumberedError(token.line, 'j'));
+        }
+        if (type.equals(Token.Type.R_BRACK)) {
+            manager.addNumberedError(new NumberedError(token.line, 'k'));
+        }
         throw new SyntaxError("Expected " + type + " but got " + token.type.toString());
+//        return  null;
+
     }
 
     public boolean checkAndSkip(Token.Type type) {

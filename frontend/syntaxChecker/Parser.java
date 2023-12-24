@@ -1,5 +1,6 @@
 package frontend.syntaxChecker;
 
+import exception.NumberedError;
 import frontend.lexer.Token;
 import frontend.lexer.TokenArray;
 import exception.SyntaxError;
@@ -7,7 +8,6 @@ import manager.Manager;
 
 
 import java.util.ArrayList;
-import java.util.HashMap;
 
 /**
  * 递归下降
@@ -70,14 +70,20 @@ public class Parser {
             Ast.ConstDef constDef = parseConstDef();
             constDefs.add(constDef);
         } while (tokenArray.checkAndSkip(Token.Type.COMMA));
-        tokenArray.consumeToken(Token.Type.SEMI);
+        if (!tokenArray.check(Token.Type.SEMI)) {
+            manager.addNumberedError(new NumberedError(tokenArray.getLastToken().line, 'i'));
+//            System.err.println("Expected ;");
+        } else {
+            tokenArray.consumeToken(Token.Type.SEMI);
+        }
+
         return new Ast.ConstDecl(btype, constDefs);
     }
 
     private Ast.ConstDef parseConstDef() throws SyntaxError {
         Ast.Ident ident = parseIdent();
         if (tokenArray.checkAndSkip(Token.Type.L_BRACK)) {
-            ArrayList<Ast.AddExp> addExps = new ArrayList<Ast.AddExp>();
+            ArrayList<Ast.AddExp> addExps = new ArrayList<>();
             do {
                 Ast.AddExp addExp = parseAddExp();
                 addExps.add(addExp);
@@ -123,7 +129,12 @@ public class Parser {
             Ast.VarDef varDef = parseVarDef();
             varDefs.add(varDef);
         } while (tokenArray.checkAndSkip(Token.Type.COMMA));
-        tokenArray.consumeToken(Token.Type.SEMI);
+        if (!tokenArray.check(Token.Type.SEMI)) {
+            manager.addNumberedError(new NumberedError(tokenArray.getLastToken().line, 'i'));
+            //System.err.println("Expected ;");
+        } else {
+            tokenArray.consumeToken(Token.Type.SEMI);
+        }
         return new Ast.VarDecl(btype, varDefs);
     }
 
@@ -188,11 +199,18 @@ public class Parser {
     }
 
     private Ast.BlockItem parseBlockItem() throws SyntaxError {
-        if (tokenArray.check(Token.Type.CONST, Token.Type.INT, Token.Type.FLOAT)) {
-            return parseDecl();
-        } else {
-            return parseStmt();
+        Ast.BlockItem ret = new Ast.VoidStmt();
+        try {
+            if (tokenArray.check(Token.Type.CONST, Token.Type.INT, Token.Type.FLOAT)) {
+                return parseDecl();
+            } else {
+
+                ret = parseStmt();
+            }
+        } catch (SyntaxError ignored) {
+
         }
+        return ret;
     }
 
     private Ast.Lval exactLval(Ast.AddExp exp) throws SyntaxError {
@@ -211,27 +229,32 @@ public class Parser {
      * ‘while’ ‘(’ Cond ‘)’ Stmt | ‘break’ ‘;’ | ‘continue’ ‘;’ | ‘return’ [Exp] ‘;’
      */
     private Ast.Stmt parseStmt() throws SyntaxError {
+        Ast.Stmt retStmt = null;
         Token firstToken = tokenArray.ahead(0);
         switch (firstToken.type) {
             case IDENTIFIER -> {
                 if (tokenArray.ahead(1).type == Token.Type.L_PAREN) {
                     Ast.AddExp exp = parseAddExp();
-                    tokenArray.consumeToken(Token.Type.SEMI);
-                    return new Ast.ExpStmt(exp);
+                    retStmt = new Ast.ExpStmt(exp);
+                    break;
+                    // tokenArray.consumeToken(Token.Type.SEMI);
                 }
                 Ast.AddExp exp = parseAddExp();
                 if (!tokenArray.check(Token.Type.ASSIGN)) {
-                    return new Ast.ExpStmt(exp);
+                    retStmt = new Ast.ExpStmt(exp);
+                    break;
                 }
                 Ast.Lval lval = exactLval(exp);
                 tokenArray.consumeToken(Token.Type.ASSIGN);
                 Ast.AddExp rExp = parseAddExp();
-                tokenArray.consumeToken(Token.Type.SEMI);
-                return new Ast.AssignStmt(lval, rExp);
+
+                // tokenArray.consumeToken(Token.Type.SEMI);
+                retStmt = new Ast.AssignStmt(lval, rExp);
+
             }
             case SEMI -> {
-                tokenArray.consumeToken(Token.Type.SEMI);
-                return new Ast.VoidStmt();
+                retStmt = new Ast.VoidStmt();
+                //tokenArray.consumeToken(Token.Type.SEMI)
             }
             case L_BRACE -> {
                 Ast.Block block = parseBlock();
@@ -283,34 +306,38 @@ public class Parser {
                 return new Ast.ForStmt(init, cond, step, stmt);
             }
             case BREAK -> {
+                retStmt = new Ast.BreakStmt();
+                manager.astRecorder.put(retStmt, tokenArray.getToken().line);
                 tokenArray.consumeToken(Token.Type.BREAK);
-                tokenArray.consumeToken(Token.Type.SEMI);
-                return new Ast.BreakStmt();
             }
             case CONTINUE -> {
+
+                retStmt = new Ast.ContinueStmt();
+                manager.astRecorder.put(retStmt, tokenArray.getToken().line);
                 tokenArray.consumeToken(Token.Type.CONTINUE);
-                tokenArray.consumeToken(Token.Type.SEMI);
-                return new Ast.ContinueStmt();
             }
             case RETURN -> {
                 tokenArray.consumeToken(Token.Type.RETURN);
-                Ast.ReturnStmt ret;
-                if (tokenArray.checkAndSkip(Token.Type.SEMI)) {
-                    ret = new Ast.ReturnStmt();
+                if (tokenArray.check(Token.Type.SEMI)) {
+                    retStmt = new Ast.ReturnStmt();
                 } else {
                     Ast.AddExp exp = parseAddExp();
-                    tokenArray.consumeToken(Token.Type.SEMI);
-                    ret = new Ast.ReturnStmt(exp);
+                    retStmt = new Ast.ReturnStmt(exp);
                 }
-                manager.astRecorder.put(ret, firstToken.line);
-                return ret;
+                manager.astRecorder.put(retStmt, firstToken.line);
             }
             default -> {
                 Ast.AddExp exp = parseAddExp();
-                tokenArray.consumeToken(Token.Type.SEMI);
-                return new Ast.ExpStmt(exp);
+                // tokenArray.consumeToken(Token.Type.SEMI);
+                retStmt = new Ast.ExpStmt(exp);
             }
         }
+        if (!tokenArray.check(Token.Type.SEMI)) {
+            manager.addNumberedError(new NumberedError(tokenArray.getLastToken().line, 'i'));
+            throw new SyntaxError("Expected ;");
+        }
+        tokenArray.consumeToken(Token.Type.SEMI);
+        return retStmt;
     }
 
     private Ast.Cond parseCond() throws SyntaxError {
@@ -441,28 +468,44 @@ public class Parser {
     }
 
     private Ast.UnaryExp parseUnaryExp() throws SyntaxError {
+        Ast.UnaryExp ret = null;
         if (tokenArray.check(Token.Type.IDENTIFIER) && tokenArray.check(1, Token.Type.L_PAREN)) {
             Ast.Ident ident = parseIdent();
             tokenArray.consumeToken(Token.Type.L_PAREN);
-            if (tokenArray.checkAndSkip(Token.Type.R_PAREN)) {
+            if (tokenArray.check(Token.Type.R_PAREN)) {
+                tokenArray.consumeToken(Token.Type.R_PAREN);
                 return new Ast.UnaryExp(ident);
-            }
-            if (tokenArray.check(Token.Type.STR)) {
+            } else if (tokenArray.check(Token.Type.STR)) {
 //                if(!ident.identifier.content.equals(Manager.ExternFunc.PRINTF.getName())) {
 //                    throw new SyntaxError("Unexpeted string");
 //                }
                 Token str = tokenArray.consumeToken(Token.Type.STR);
                 if (tokenArray.checkAndSkip(Token.Type.COMMA)) {
                     Ast.FuncRParams funcRParams = parseFuncRParams();
-                    tokenArray.consumeToken(Token.Type.R_PAREN);
+                    if (tokenArray.check(Token.Type.R_PAREN)) {
+                        tokenArray.consumeToken(Token.Type.R_PAREN);
+                    } else {
+                        manager.addNumberedError(new NumberedError(tokenArray.getLastToken().line, 'j'));
+                    }
                     return new Ast.UnaryExp(ident, funcRParams, str);
+
                 }
-                tokenArray.consumeToken(Token.Type.R_PAREN);
+                if (tokenArray.check(Token.Type.R_PAREN)) {
+                    tokenArray.consumeToken(Token.Type.R_PAREN);
+                } else {
+                    manager.addNumberedError(new NumberedError(tokenArray.getLastToken().line, 'j'));
+                }
                 return new Ast.UnaryExp(ident, str);
+            } else {
+                Ast.FuncRParams funcRParams = parseFuncRParams();
+                if (tokenArray.check(Token.Type.R_PAREN)) {
+                    tokenArray.consumeToken(Token.Type.R_PAREN);
+                } else {
+                    manager.addNumberedError(new NumberedError(tokenArray.getLastToken().line, 'j'));
+                }
+                return new Ast.UnaryExp(ident, funcRParams);
             }
-            Ast.FuncRParams funcRParams = parseFuncRParams();
-            tokenArray.consumeToken(Token.Type.R_PAREN);
-            return new Ast.UnaryExp(ident, funcRParams);
+
         } else if (tokenArray.check(Token.Type.NOT, Token.Type.ADD, Token.Type.SUB)) {
             Token unaryOp = tokenArray.consumeToken(Token.Type.NOT, Token.Type.ADD, Token.Type.SUB);
             Ast.UnaryExp unaryExp = parseUnaryExp();

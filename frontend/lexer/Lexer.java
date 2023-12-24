@@ -166,7 +166,7 @@ public class Lexer {
                 if(!Token.Type.STR.getPattern().matcher(token.toString()).matches()) {
                     //
                     NumberedError err = new NumberedError(retSymbol.line, 'a');
-//                    System.err.println(err);
+//                    err.println(err);
                     manager.addNumberedError(err);
                 }
                 break;

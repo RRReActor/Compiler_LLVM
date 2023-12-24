@@ -25,6 +25,7 @@ public class Compiler {
             Manager.BufferReader.init(arg.srcFileName);
             TokenArray tokenArray = new TokenArray();
             Visitor visitor = new Visitor();
+            tokenArray.setManager(visitor.getManager());
             Lexer.setManager(visitor.getManager());
             Lexer.init(tokenArray);
             Lexer.run();
